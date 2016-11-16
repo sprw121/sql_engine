@@ -10,8 +10,6 @@ table::table(std::string& file_name)
 {
     std::vector<std::vector<char*>> ir = parse_csv(file_name);
 
-    for(auto c : ir[0]) std::cout << (void*)c << " ";
-
     for(auto name: ir[0])
     {
         column_names.push_back(std::string(name));

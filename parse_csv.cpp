@@ -9,7 +9,7 @@ std::vector<std::vector<char*>> parse_csv(std::string& file_name)
     FILE* fd = fopen(file_name.c_str(), "r");
     if(fd == NULL)
     {
-        std::cout << "Error opening file: " << file_name << std::endl;
+        std::cerr << "Error opening file: " << file_name << std::endl;
         throw 0;
     }
     if(fseek(fd, 0, SEEK_END) != 0)
