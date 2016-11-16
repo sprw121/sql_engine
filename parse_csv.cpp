@@ -3,30 +3,34 @@
 #include "table.hpp"
 #include "util.hpp"
 
+// Convert a file into an vector of vector of c strings
 std::vector<std::vector<char*>> parse_csv(std::string& file_name)
 {
     FILE* fd = fopen(file_name.c_str(), "r");
     if(fd == NULL)
     {
         std::cout << "Error opening file: " << file_name << std::endl;
-        exit(1);
+        throw 0;
     }
     if(fseek(fd, 0, SEEK_END) != 0)
     {
-        std::cout << "Error reading file: " << file_name << std::endl;
-        exit(1);
+        std::cerr << "Error reading file: " << file_name << std::endl;
+        throw 0;
     }
     auto len = ftell(fd);
     rewind(fd);
 
+    // A little hacky, but freeing this buffer is handling later
+    // Due to the way the IR is constructed, ret[0][0] will hold this pointer
     char* buffer = (char*)malloc(sizeof(char) * (len + 1));
     if(buffer == NULL)
     {
-        std::cout << "OOM" << std::endl;
+        std::cerr << "OOM" << std::endl;
         exit(1);
     }
 
     fread(buffer, sizeof(char), len, fd);
+    // Simplifies end of line logic
     if(buffer[len - 1] != '\n')
     {
         buffer[len] = '\n';
@@ -36,10 +40,10 @@ std::vector<std::vector<char*>> parse_csv(std::string& file_name)
 
     std::vector<std::vector<char*>> ret;
 
-    bool first = false;
-    int begin = 0, columns = 0;
-    std::vector<char*> tmp;
-    for(int i = 0; i < len; i++)
+    // For now only hold pointers into our file buffer
+    unsigned int begin = 0, columns = 0;
+    std::vector<char*> tmp(0);
+    for(unsigned int i = 0; i < len; i++)
     {
         char c = buffer[i];
         if(c == ',' || c == '\n')
@@ -79,11 +83,13 @@ std::vector<type> infer_column_types(std::vector<std::vector<char*>> ir)
 {
     std::vector<type> ret(ir[0].size(), type::INT);
 
-    for(int i = 1; i < ir.size(); i++)
+    for(unsigned int i = 1; i < ir.size(); i++)
     {
-        for(int j = 0; j < ir[i].size(); j++)
+        for(unsigned int j = 0; j < ir[i].size(); j++)
         {
             type t = infer_type(ir[i][j]);
+            // Int columns containing a float get promoted to float column
+            // Int or float columns containg a string get promoted to string
             switch(t)
             {
                 case type::STRING:
@@ -103,16 +109,21 @@ std::vector<type> infer_column_types(std::vector<std::vector<char*>> ir)
     return ret;
 }
 
+// Converts our c string csv IR into a column-wise representation of boost::variants.
+// Vector of columns.
 std::vector<std::vector<cell>> load_from_ir(std::vector<std::vector<char*>> ir,
         std::vector<type> column_types)
 {
     std::vector<std::vector<cell>> ret(ir[0].size(),
                                        std::vector<cell>(ir.size()-1));
 
-    for(int i = 1; i < ir.size(); i++)
+    for(unsigned int i = 1; i < ir.size(); i++)
     {
-        for(int j = 0; j < ir[i].size(); j++)
+        for(unsigned int j = 0; j < ir[i].size(); j++)
         {
+            // Parse the c string representation and store in a boost::variant
+            // Makes accessing contents later simpler, especially putting
+            // values in maps for joins.
             switch(column_types[j])
             {
                 case type::INT:
@@ -129,5 +140,7 @@ std::vector<std::vector<cell>> load_from_ir(std::vector<std::vector<char*>> ir,
         }
     }
 
+    // See line 22
+    free(ir[0][0]);
     return ret;
 }

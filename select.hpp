@@ -18,8 +18,8 @@ struct table_view
 
 struct table_iterator : table_view
 {
-    int current_row;
-    table* source;
+    unsigned int current_row;
+    table*       source;
 
     table_iterator(table* source_) : current_row(0), source(source_) {};
 
@@ -80,7 +80,7 @@ struct inner_join : table_view
             right_column = left_column_;;
         }
 
-        for(int i = 0; i < left->height(); i++)
+        for(unsigned int i = 0; i < left->height(); i++)
         {
             index[boost::get<T>(left->source->cells[left_column][i])] = i;
         }
@@ -160,7 +160,7 @@ struct outer_join : table_view
             right_column = left_column_;;
         }
 
-        for(int i = 0; i < left->height(); i++)
+        for(unsigned int i = 0; i < left->height(); i++)
         {
             index[boost::get<T>(left->source->cells[left_column][i])] = i;
         }
@@ -217,7 +217,7 @@ struct left_outer_join : table_view
         right = right_;
         r_col = right_column_;
 
-        for(int i = 0; i < right->height(); i++)
+        for(unsigned int i = 0; i < right->height(); i++)
         {
             index[boost::get<T>(right->source->cells[r_col][i])] = i;
         }
@@ -277,7 +277,7 @@ template<typename T> struct right_outer_join : table_view
         right = right_;
         r_col = right_column_;
 
-        for(int i = 0; i < right->height(); i++)
+        for(unsigned int i = 0; i < right->height(); i++)
         {
             index[boost::get<T>(left->source->cells[l_col][i])] = i;
         }

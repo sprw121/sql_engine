@@ -8,36 +8,48 @@
 #include "lexer.hpp"
 #include "util.hpp"
 
-int resolve_precedence(token_t t)
+/*
+enum associativity
+{
+    LEFT,
+    RIGHT
+};*/
+
+int precedence(token_t t)
 {
     switch(t.t)
     {
         case token_type::PAREN_OPEN:
-            return -1;
-        case token_type::SELECT:    case token_type::SHOW:  case token_type::DESCRIBE:
-        case token_type::LOAD:      case token_type::EXIT:
             return 0;
-        case token_type::FROM:      case token_type::WHERE:
-        case token_type::LIMIT:     case token_type::OFFSET:
+        case token_type::SELECT:    case token_type::SHOW:  case token_type::DESCRIBE:
+        case token_type::LOAD:
             return 1;
-        case token_type::AS:        case token_type::ON: case token_type::JOIN:
+        case token_type::LIMIT:     case token_type::OFFSET:
+            return 2;
+        case token_type::WHERE:
+            return 3;
+        case token_type::FROM:
             return 4;
-        case token_type::PLUS:      case token_type::MINUS:
+        case token_type::JOIN:      case token_type::AS:
             return 5;
-        case token_type::STAR:      case token_type::DIVIDE:    case token_type::MOD:
+        case token_type::ON:
             return 6;
-        case token_type::CARAT:
+        case token_type::PLUS:      case token_type::MINUS:
             return 7;
+        case token_type::STAR:      case token_type::DIVIDE:    case token_type::MOD:
+            return 8;
+        case token_type::CARAT:
+            return 9;
         case token_type::EQUAL:     case token_type::NEQUAL:    case token_type::LT:
         case token_type::LTEQ:      case token_type::GT:        case token_type::GTEQ:
-            return 8;
-        case token_type::AND:
-            return 9;
-        case token_type::OR:
             return 10;
+        case token_type::AND:
+            return 11;
+        case token_type::OR:
+            return 12;
     }
 
-    std::cerr << "Attempted to resolve precedence for token of type "
+    std::cerr << "INTERNAL: Attempted to resolve precedence for token of type "
               << output_token(t) << "." << std::endl;
     throw 0;
 }
@@ -52,8 +64,7 @@ struct parse_tree_node
 
         // Concrete states
         VALUE,
-        ARITH_RES,
-        LOGICAL_RES,
+        EXP_RES,
         JOIN,
     };
 
@@ -67,6 +78,8 @@ struct parse_tree_node
         t(VALUE), token(token_) , args(std::vector<parse_tree_node>()) {};
     parse_tree_node(node_type t_, token_t token_) :
         t(t_), token(token_) , args(std::vector<parse_tree_node>()) {};
+    parse_tree_node(node_type t_) :
+        t(t_), token() , args() {};
 };
 
 void print_parse_tree(parse_tree_node node, int level)
@@ -76,40 +89,14 @@ void print_parse_tree(parse_tree_node node, int level)
     for(auto& t: node.args) print_parse_tree(t, level+1);
 }
 
-void pop_n(parse_tree_node& op,
-           std::vector<parse_tree_node>& operators,
-           std::vector<parse_tree_node>& parse_tree,
-           int n)
-{
-    if(parse_tree.size() >= n)
-    {
-        while(n--) op.args.push_back(pop_top(parse_tree));
-        parse_tree.push_back(op);
-    }
-    else
-    {
-        std::cerr << "Not enough args for operator: "
-                  << output_token(op.token) << ".";
-        throw 0;
-    }
-}
-
 void bind(std::vector<parse_tree_node>& operators,
           std::vector<parse_tree_node>& parse_tree)
 {
-    auto op = pop_top(operators);
+    auto op = pop_back(operators);
 
     switch(op.token.t)
     {
-        case token_type::SELECT:
-            while(parse_tree.size() &&
-                  parse_tree.back().token.t != token_type::SELECT)
-            {
-                op.args.push_back(pop_top(parse_tree));
-            }
-            parse_tree.pop_back();
-            parse_tree.push_back(op);
-            break;
+        // BINARY infix
         case token_type::PLUS:  case token_type::MINUS:
         case token_type::STAR:  case token_type::DIVIDE:
         case token_type::MOD:   case token_type::CARAT:
@@ -117,28 +104,73 @@ void bind(std::vector<parse_tree_node>& operators,
         case token_type::LT:    case token_type::LTEQ:
         case token_type::GT:    case token_type::GTEQ:
         case token_type::AND:   case token_type::OR:
-        case token_type::JOIN:  case token_type::ON:
         case token_type::AS:
         {
-            pop_n(op, operators, parse_tree, 2);
+            parse_tree_node right = pop_back(parse_tree);
+            parse_tree_node oper = pop_back(parse_tree);
+            parse_tree_node left = pop_back(parse_tree);
+            if(oper.token.t != op.token.t)
+            {
+                std::cerr << "Invalid expression.";
+                throw 0;
+            }
+            op.args.push_back(left);
+            op.args.push_back(right);
+            op.t = parse_tree_node::EXP_RES;
+            parse_tree.push_back(op);
             break;
         }
-        case token_type::FROM:  case token_type::WHERE:
-        case token_type::LIMIT: case token_type::OFFSET:
-        case token_type::SHOW:  case token_type::DESCRIBE:
+        // Variadic
+        case token_type::SELECT: case token_type::FROM:
+        case token_type::WHERE:  case token_type::LIMIT:
         case token_type::LOAD:
         {
-            pop_n(op, operators, parse_tree, 1);
+            while(parse_tree.size() &&
+                  parse_tree.back().token.t != op.token.t)
+            {
+                if(parse_tree.back().token.t != token_type::COMMA)
+                {
+                    op.args.push_back(pop_back(parse_tree));
+                }
+                else
+                {
+                    parse_tree.pop_back();
+                }
+            }
+            parse_tree.pop_back();
+            parse_tree.push_back(op);
             break;
         }
-        case token_type::EXIT:
+        // Join is variabic to the right (ON clause) but takes 1 left argument
+        case token_type::JOIN:
         {
-            pop_n(op, operators, parse_tree, 0);
+            while(parse_tree.size() &&
+                  parse_tree.back().token.t != op.token.t)
+            {
+                op.args.push_back(pop_back(parse_tree));
+            }
+            parse_tree.pop_back();
+            if(op.args.size() > 2)
+            {
+                std::cerr << "Invalid expression";
+            }
+            op.args.push_back(pop_back(parse_tree));
+            parse_tree.push_back(op);
+            break;
+        }
+        // Unary
+        case token_type::OFFSET:   case token_type::SHOW:
+        case token_type::DESCRIBE: case token_type::ON:
+        {
+            op.args.push_back(pop_back(parse_tree));
+            parse_tree.pop_back();
+            parse_tree.push_back(op);
             break;
         }
         default:
         {
-            std::cerr << "Invalid operator type " << output_token(op.token);
+            std::cerr << "INTERNAL: Attempted to resolve precedence for invalid operator "
+                      << output_token(op.token) << ".";
             throw 0;
         }
     }
@@ -162,7 +194,7 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
         {
             case token_type::FLOAT_LITERAL: case token_type::INT_LITERAL:
             case token_type::STR_LITERAL:   case token_type::IDENTITIFER:
-            case token_type::TABLES:
+            case token_type::TABLES:        case token_type::EXIT:
             {
                 parse_tree.push_back(parse_tree_node(parse_tree_node::VALUE, token));
                 break;
@@ -184,7 +216,7 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
                 std::stack<parse_tree_node> arg_list;
                 while(parse_tree.size() && parse_tree.back().token.t != token_type::PAREN_OPEN)
                 {
-                    arg_list.push(pop_top(parse_tree));
+                    arg_list.push(pop_back(parse_tree));
                 }
                 parse_tree.pop_back(); // PAREN_OPEN
 
@@ -209,16 +241,24 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
             }
             case token_type::COMMA:
             {
-                while(operators.size() && resolve_precedence(operators.back().token.t) > 0)
+                // 3 Magic number, all operatoins < than 3 are variadic,
+                // All operation >= are not.
+                // Comma binding everything left until the first variadic operations.
+                while(operators.size() && precedence(operators.back().token.t) > 3)
                 {
                     bind(operators, parse_tree);
                 }
+                // Pushing comma prevents evaluation of expressions that
+                // would otherwise be valid across comma boundary. EG
+                // f(a + b, * c) being evaulated as f(a+b*c).
+                // Must be ignored when binding variadic operations.
+                parse_tree.push_back(token);
                 break;
             }
             default:
             {
                 while(operators.size() &&
-                      resolve_precedence(operators.back().token) >= resolve_precedence(token))
+                      precedence(operators.back().token) >= precedence(token))
                 {
                     bind(operators, parse_tree);
                 }
@@ -242,9 +282,14 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
 
     print_parse_tree(parse_tree.back(), 0);
 
-    return pop_top(parse_tree);
+    return pop_back(parse_tree);
 }
 
+void parse(std::vector<token_t>& tokens)
+{
+    auto t = to_parse_tree(tokens);
+}
+/*
 std::vector<token_t> to_rpn(std::vector<token_t>& tokens)
 {
     std::vector<token_t> output_buffer;
@@ -381,14 +426,14 @@ void print_ast(ast_node node, int level)
     for(int i = 0; i < level; i++) std::cout << "    ";
     std::cout << output_ast_type(node.t) << " (" << output_token(node.origin) << ")" << std::endl;
     for(auto& n: node.args) print_ast(n, level + 1);
-}
+}*/
 
+/*
 void parse(std::vector<token_t>& tokens)
 {
-    auto t = to_parse_tree(tokens);
     //auto rpn_tokens = to_rpn(tokens);
 
-/*    std::stack<ast_node> ast;
+    std::stack<ast_node> ast;
     for(auto& token : rpn_tokens)
     {
         switch(token.t)
@@ -692,7 +737,7 @@ void parse(std::vector<token_t>& tokens)
 
     print_ast(ast.top(), 0);
 
-    return pop_top(ast);*/
-}
+    return pop_top(ast);
+}*/
 
 #endif

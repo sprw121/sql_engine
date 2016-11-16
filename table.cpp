@@ -1,6 +1,6 @@
+#include <cstring>
 #include <iostream>
 #include <iomanip>
-#include <string>
 #include <vector>
 
 #include "parse_csv.hpp"
@@ -9,6 +9,8 @@
 table::table(std::string& file_name)
 {
     std::vector<std::vector<char*>> ir = parse_csv(file_name);
+
+    for(auto c : ir[0]) std::cout << (void*)c << " ";
 
     for(auto name: ir[0])
     {
@@ -26,7 +28,7 @@ void table::describe()
     std::cout << std::setw(15) << std::left << "Column" << " | "
         << std::setw(15) << std::left << "Type"   << std::endl;
     std::cout << std::string(16, '-') << "+" << std::string(16, '-') << std::endl;
-    for(int i = 0; i < column_names.size(); i++)
+    for(unsigned int i = 0; i < column_names.size(); i++)
     {
         std::cout << std::setw(15) << column_names[i] << " | ";
         switch(column_types[i])

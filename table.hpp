@@ -7,6 +7,7 @@
 #include "boost/variant.hpp"
 #include "boost/variant/get.hpp"
 
+
 enum type
 {
     NUL,

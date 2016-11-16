@@ -78,8 +78,8 @@ std::string output_token(token_t);
 
 struct lexer
 {
-    std::string query;
-    int         idx;
+    std::string     query;
+    unsigned int    idx;
 
     lexer(std::string query_) : query(query_), idx(0) {};
     bool next_token(token_t& token);

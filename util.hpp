@@ -1,6 +1,7 @@
 #ifndef _UTIL_H
 #define _UTIL_H
 
+#include <iostream>
 #include <stack>
 #include <queue>
 #include <vector>
@@ -34,17 +35,19 @@ T pop_top(std::stack<T>& q)
 }
 
 template<typename T>
-T pop_top(std::vector<T>& q)
+T pop_back(std::vector<T>& q)
 {
-    T t;
-
     if(q.size())
     {
-        t = q.back();
+        T t = q.back();
         q.pop_back();
+        return t;
     }
-
-    return t;
+    else
+    {
+        std::cerr << "INTERNAL: Attempted to pop_back empty vector";
+        throw 0;
+    }
 }
 
 bool is_integer(const char* str);

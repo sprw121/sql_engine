@@ -20,6 +20,10 @@ int main(int argc, char** argv)
         engine.load_from_csv(argv[arg_idx]);
     }
 
+    engine.tables["a"].describe();
+    engine.tables["b"].describe();
+    engine.tables["c"].describe();
+
     engine.iterator_table("a");
     engine.iterator_table("b");
     std::cout << std::endl << std::endl;
