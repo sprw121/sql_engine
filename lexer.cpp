@@ -8,178 +8,178 @@ std::string output_token(token_t t)
     std::stringstream stream;
     switch(t.t)
     {
-        case token_type::PLUS:          stream << "PLUS"; break;
-        case token_type::MINUS:         stream << "MINUS"; break;
-        case token_type::STAR:          stream << "STAR"; break;
-        case token_type::DIVIDE:        stream << "DIVIDE"; break;
-        case token_type::MOD:           stream << "MOD"; break;
-        case token_type::CARAT:         stream << "CARAT"; break;
-        case token_type::PAREN_OPEN:    stream << "PAREN_OPEN"; break;
-        case token_type::PAREN_CLOSE:   stream << "PAREN_CLOSE"; break;
-        case token_type::BANG:          stream << "BANG"; break;
-        case token_type::EQUAL:         stream << "EQUAL"; break;
-        case token_type::NEQUAL:        stream << "NEQUAL"; break;
-        case token_type::LT:            stream << "LT"; break;
-        case token_type::LTEQ:          stream << "LTEQ"; break;
-        case token_type::GT:            stream << "GT"; break;
-        case token_type::GTEQ:          stream << "GTEQ";
-        case token_type::COMMA:         stream << "COMMA"; break;
-        case token_type::END:           stream << "END"; break;
+        case token_t::PLUS:          stream << "PLUS"; break;
+        case token_t::MINUS:         stream << "MINUS"; break;
+        case token_t::STAR:          stream << "STAR"; break;
+        case token_t::DIVIDE:        stream << "DIVIDE"; break;
+        case token_t::MOD:           stream << "MOD"; break;
+        case token_t::CARAT:         stream << "CARAT"; break;
+        case token_t::PAREN_OPEN:    stream << "PAREN_OPEN"; break;
+        case token_t::PAREN_CLOSE:   stream << "PAREN_CLOSE"; break;
+        case token_t::BANG:          stream << "BANG"; break;
+        case token_t::EQUAL:         stream << "EQUAL"; break;
+        case token_t::NEQUAL:        stream << "NEQUAL"; break;
+        case token_t::LT:            stream << "LT"; break;
+        case token_t::LTEQ:          stream << "LTEQ"; break;
+        case token_t::GT:            stream << "GT"; break;
+        case token_t::GTEQ:          stream << "GTEQ";
+        case token_t::COMMA:         stream << "COMMA"; break;
+        case token_t::END:           stream << "END"; break;
 
-        case token_type::STR_LITERAL:   stream << "STRING " << t.u; break;
-        case token_type::INT_LITERAL:   stream << "INT " << t.u; break;
-        case token_type::FLOAT_LITERAL: stream << "FLOAT " << t.u; break;
-        case token_type::IDENTITIFER:   stream << "IDENTITIFER " <<t.u; break;
+        case token_t::STR_LITERAL:   stream << "STRING " << t.u; break;
+        case token_t::INT_LITERAL:   stream << "INT " << t.u; break;
+        case token_t::FLOAT_LITERAL: stream << "FLOAT " << t.u; break;
+        case token_t::IDENTITIFER:   stream << "IDENTITIFER " <<t.u; break;
 
-        case token_type::SELECT:        stream << "SELECT"; break;
-        case token_type::AS:            stream << "AS"; break;
-        case token_type::FROM:          stream << "FROM"; break;
-        case token_type::WHERE:         stream << "WHERE"; break;
-        case token_type::LIMIT:         stream << "LIMIT"; break;
-        case token_type::OFFSET:        stream << "OFFSET"; break;
+        case token_t::SELECT:        stream << "SELECT"; break;
+        case token_t::AS:            stream << "AS"; break;
+        case token_t::FROM:          stream << "FROM"; break;
+        case token_t::WHERE:         stream << "WHERE"; break;
+        case token_t::LIMIT:         stream << "LIMIT"; break;
+        case token_t::OFFSET:        stream << "OFFSET"; break;
 
-        case token_type::SHOW:          stream << "SHOW"; break;
-        case token_type::TABLES:        stream << "TABLES"; break;
+        case token_t::SHOW:          stream << "SHOW"; break;
+        case token_t::TABLES:        stream << "TABLES"; break;
 
-        case token_type::DESCRIBE:      stream << "DESCRIBE"; break;
-        case token_type::LOAD:          stream << "LOAD"; break;
-        case token_type::EXIT:          stream << "EXIT"; break;
+        case token_t::DESCRIBE:      stream << "DESCRIBE"; break;
+        case token_t::LOAD:          stream << "LOAD"; break;
+        case token_t::EXIT:          stream << "EXIT"; break;
 
-        case token_type::LEFT:          stream << "LEFT"; break;
-        case token_type::RIGHT:         stream << "RIGHT"; break;
-        case token_type::OUTER:         stream << "OUTER"; break;
-        case token_type::INNER:         stream << "INNER"; break;
-        case token_type::CROSS:         stream << "CROSS"; break;
-        case token_type::JOIN:          stream << "JOIN"; break;
-        case token_type::ON:            stream << "ON"; break;
+        case token_t::LEFT:          stream << "LEFT"; break;
+        case token_t::RIGHT:         stream << "RIGHT"; break;
+        case token_t::OUTER:         stream << "OUTER"; break;
+        case token_t::INNER:         stream << "INNER"; break;
+        case token_t::CROSS:         stream << "CROSS"; break;
+        case token_t::JOIN:          stream << "JOIN"; break;
+        case token_t::ON:            stream << "ON"; break;
 
-        case token_type::AND:           stream << "AND"; break;
-        case token_type::OR:            stream << "OR"; break;
+        case token_t::AND:           stream << "AND"; break;
+        case token_t::OR:            stream << "OR"; break;
 
-        case token_type::FUNCTION:      stream << "FUNCTION"; break;
+        case token_t::FUNCTION:      stream << "FUNCTION"; break;
 
-        case token_type::INVALID:       stream << "INVALID"; break;
+        case token_t::INVALID:       stream << "INVALID"; break;
     }
 
     return stream.str();
 }
 
-static token_type resolve_token_string(std::string token_string)
+static token_t::token_type resolve_token_string(std::string token_string)
 {
-    if(is_integer(token_string.c_str()))    return token_type::INT_LITERAL;
-    if(is_float(token_string.c_str()))      return token_type::FLOAT_LITERAL;
+    if(is_integer(token_string.c_str()))    return token_t::INT_LITERAL;
+    if(is_float(token_string.c_str()))      return token_t::FLOAT_LITERAL;
 
     if(token_string == "select" || token_string == "SELECT")
-        return token_type::SELECT;
+        return token_t::SELECT;
     if(token_string == "as" || token_string == "AS")
-        return token_type::AS;
+        return token_t::AS;
     if(token_string == "from" || token_string == "FROM")
-        return token_type::FROM;
+        return token_t::FROM;
     if(token_string == "where" || token_string == "WHERE")
-        return token_type::WHERE;
+        return token_t::WHERE;
     if(token_string == "limit" || token_string == "LIMIT")
-        return token_type::LIMIT;
+        return token_t::LIMIT;
     if(token_string == "offset" || token_string == "OFFSET")
-        return token_type::OFFSET;
+        return token_t::OFFSET;
 
     if(token_string == "show" || token_string == "SHOW")
-        return token_type::SHOW;
+        return token_t::SHOW;
     if(token_string == "tables" || token_string == "TABLES")
-        return token_type::TABLES;
+        return token_t::TABLES;
 
     if(token_string == "describe" || token_string == "DESCRIBE")
-        return token_type::DESCRIBE;
+        return token_t::DESCRIBE;
     if(token_string == "load" || token_string == "LOAD")
-        return token_type::LOAD;
+        return token_t::LOAD;
     if(token_string == "exit" || token_string == "EXIT")
-        return token_type::EXIT;
+        return token_t::EXIT;
 
     if(token_string == "left" || token_string == "LEFT")
-        return token_type::LEFT;
+        return token_t::LEFT;
     if(token_string == "right" || token_string == "RIGHT")
-        return token_type::RIGHT;
+        return token_t::RIGHT;
     if(token_string == "outer" || token_string == "OUTER")
-        return token_type::OUTER;
+        return token_t::OUTER;
     if(token_string == "inner" || token_string == "INNER")
-        return token_type::INNER;
+        return token_t::INNER;
     if(token_string == "cross" || token_string == "CROSS")
-        return token_type::CROSS;
+        return token_t::CROSS;
     if(token_string == "join" || token_string == "JOIN")
-        return token_type::JOIN;
+        return token_t::JOIN;
     if(token_string == "on" || token_string == "ON")
-        return token_type::ON;
+        return token_t::ON;
 
     if(token_string == "and" || token_string == "AND")
-        return token_type::AND;
+        return token_t::AND;
     if(token_string == "or" || token_string == "OR")
-        return token_type::OR;
+        return token_t::OR;
 
     if(token_string == "f" || token_string == "f")
-        return token_type::FUNCTION;
+        return token_t::FUNCTION;
 
-    return token_type::IDENTITIFER;
+    return token_t::IDENTITIFER;
 }
 
-static token_type resolve_token_char(char input)
+static token_t::token_type resolve_token_char(char input)
 {
     switch(input)
     {
         case '+':
-            return token_type::PLUS;
+            return token_t::PLUS;
         case '-':
-            return token_type::MINUS;
+            return token_t::MINUS;
         case '*':
-            return token_type::STAR;
+            return token_t::STAR;
         case '/':
-            return token_type::DIVIDE;
+            return token_t::DIVIDE;
         case '%':
-            return token_type::MOD;
+            return token_t::MOD;
         case '^':
-            return token_type::CARAT;
+            return token_t::CARAT;
         case '(':
-            return token_type::PAREN_OPEN;
+            return token_t::PAREN_OPEN;
         case ')':
-            return token_type::PAREN_CLOSE;
+            return token_t::PAREN_CLOSE;
         case '!':
-            return token_type::BANG;
+            return token_t::BANG;
         case '=':
-            return token_type::EQUAL;
+            return token_t::EQUAL;
         case '>':
-            return token_type::GT;
+            return token_t::GT;
         case '<':
-            return token_type::LT;
+            return token_t::LT;
         case ',':
-            return token_type::COMMA;
+            return token_t::COMMA;
         case ';':
-            return token_type::END;
+            return token_t::END;
         case '&':
-            return token_type::AND;
+            return token_t::AND;
         case '|':
-            return token_type::AND;
+            return token_t::AND;
         default: break;
     }
-    return token_type::INVALID;
+    return token_t::INVALID;
 }
 
-token_t lexer::lex_operator(token_type token)
+token_t lexer::lex_operator(token_t::token_type token)
 {
     idx++;
     if(idx == query.size()) return token_t(token);
 
-    if(token == token_type::LT) // "<>"
+    if(token == token_t::LT) // "<>"
     {
-        if(resolve_token_char(query[idx]) == token_type::GT)
+        if(resolve_token_char(query[idx]) == token_t::GT)
         {
             idx++;
-            return token_t(token_type(NEQUAL));
+            return token_t(token_t::NEQUAL);
         }
     }
-    else if(token == token_type::BANG)
+    else if(token == token_t::BANG)
     {
-        if(resolve_token_char(query[idx]) == token_type::EQUAL)
+        if(resolve_token_char(query[idx]) == token_t::EQUAL)
         {
             idx++;
-            return token_t(token_type(NEQUAL));
+            return token_t(token_t::NEQUAL);
         }
     }
 
@@ -197,11 +197,11 @@ token_t lexer::lex_string()
         std::cout << "Unclosed quotation: " << std::endl
                   << "     " << std::string(&query[start], idx - start) << std::endl
                   << "      ^" << std::endl;
-        ret = token_t(token_type::INVALID);
+        ret = token_t(token_t::INVALID);
     }
     else
     {
-        ret = token_t(token_type::STR_LITERAL,
+        ret = token_t(token_t::STR_LITERAL,
                         std::string(&query[start+1], idx - start - 1));
         idx++;
     }
@@ -213,13 +213,13 @@ token_t lexer::lex_word()
 {
     int start = idx;
     while(++idx < query.size() &&
-          resolve_token_char(query[idx]) == token_type::INVALID &&
+          resolve_token_char(query[idx]) == token_t::INVALID &&
           !is_white(query[idx]) &&
           query[idx] != '"' &&
           query[idx] != '\'');
 
     std::string token_string(&query[start], idx - start);
-    token_type t = resolve_token_string(token_string);
+    token_t::token_type t = resolve_token_string(token_string);
     return token_t(t, std::move(token_string));
 }
 
@@ -232,8 +232,8 @@ bool lexer::next_token(token_t& token)
 
     if(idx == query.size()) return false;
 
-    token_type char_token = resolve_token_char(query[idx]);
-    if(char_token != token_type::INVALID)
+    token_t::token_type char_token = resolve_token_char(query[idx]);
+    if(char_token != token_t::INVALID)
     {
         token = lex_operator(char_token);
     }

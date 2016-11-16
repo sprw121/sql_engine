@@ -45,7 +45,7 @@ T pop_back(std::vector<T>& q)
     }
     else
     {
-        std::cerr << "INTERNAL: Attempted to pop_back empty vector";
+        std::cerr << "INTERNAL: Attempted to pop_back empty vector" << std::endl;
         throw 0;
     }
 }

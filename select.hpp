@@ -9,6 +9,8 @@
 
 struct table_view
 {
+    std::string name;
+
     virtual cell access_column(unsigned int i) = 0;
     virtual void advance_row() = 0;
     virtual bool empty() = 0;
@@ -366,60 +368,5 @@ struct cross_join : table_view
         return left->height() * right->height();
     }
 };
-/*
-struct outer_join : table_view
-{
-    table_iterator* left;
-    table_iterator* right;
-    std::unorder_map<cell, int> index;
-    std::vector<bool> visited;
-
-    inner_join(table_iterator* left,  int left_column,
-               table_iterator* right, int right_column)
-    {
-        if(left->height > right->height)
-        {
-            std::swap(left, right);
-            std::swap(left_column, right_column);
-        }
-
-        for(int i = 0; i < left.height(); i++)
-        {
-            index[left.source.cells[left_column][i]] = i;
-        }
-    }
-
-    cell access_column()
-    {
-    }`
-
-    bool advance_row()
-    {
-    }
-}
-
-struct select : table_view
-{
-    table_view source;
-    std::vector<evaluator> output_columns;
-
-    cell access_column(unsigned int i)
-    {
-        return evaluator[i].eval(source);
-    }
-
-    bool advance_row()
-    {
-        return source.advance_row();
-    }
-}
-
-struct evaluator
-{
-    cell eval(table_view source)
-    {
-        return cell();
-    }
-}*/
 
 #endif

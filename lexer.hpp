@@ -6,62 +6,66 @@
 #include "boost/variant.hpp"
 #include "util.hpp"
 
-enum token_type
-{
-    PLUS,
-    MINUS,
-    STAR,
-    DIVIDE,
-    MOD,
-    CARAT,
-    PAREN_OPEN,
-    PAREN_CLOSE,
-    BANG,
-    EQUAL,
-    NEQUAL,
-    LT,
-    LTEQ,
-    GT,
-    GTEQ,
-    AND,
-    OR,
-    COMMA,
-    END,
-
-    STR_LITERAL,
-    INT_LITERAL,
-    FLOAT_LITERAL,
-    IDENTITIFER,
-
-    SELECT,
-    FROM,
-    WHERE,
-    LIMIT,
-    OFFSET,
-    AS,
-
-    SHOW,
-    TABLES,
-
-    DESCRIBE,
-    LOAD,
-    EXIT,
-
-    LEFT,
-    RIGHT,
-    OUTER,
-    INNER,
-    CROSS,
-    JOIN,
-    ON,
-
-    FUNCTION,
-
-    INVALID
-};
 
 struct token_t
 {
+    enum token_type
+    {
+        PLUS,
+        MINUS,
+        STAR,
+        DIVIDE,
+        MOD,
+        CARAT,
+        PAREN_OPEN,
+        PAREN_CLOSE,
+        BANG,
+        EQUAL,
+        NEQUAL,
+        LT,
+        LTEQ,
+        GT,
+        GTEQ,
+        AND,
+        OR,
+        COMMA,
+        END,
+
+        STR_LITERAL,
+        INT_LITERAL,
+        FLOAT_LITERAL,
+        IDENTITIFER,
+
+        SELECT,
+        FROM,
+        WHERE,
+        LIMIT,
+        OFFSET,
+        AS,
+
+        SHOW,
+        TABLES,
+
+        DESCRIBE,
+        LOAD,
+        EXIT,
+
+        LEFT,
+        RIGHT,
+        OUTER,
+        INNER,
+        CROSS,
+        JOIN,
+        ON,
+
+        FUNCTION,
+
+        SELECT_ALL,
+        NEGATE,
+
+        INVALID
+    };
+
     token_type  t;
     boost::variant<double, long, std::string> u;
 
@@ -85,7 +89,7 @@ struct lexer
     bool next_token(token_t& token);
 
     private:
-    token_t lex_operator(token_type);
+    token_t lex_operator(token_t::token_type t_);
     token_t lex_string();
     token_t lex_word();
 };

@@ -37,10 +37,10 @@ struct sql_engine
                 output_token(token);
                 switch(token.t)
                 {
-                    case token_type::INVALID:
+                    case token_t::INVALID:
                         tokens = std::vector<token_t>();
                         break;
-                    case token_type::END:
+                    case token_t::END:
                     {
                         execute_query(tokens);
                         tokens = std::vector<token_t>();
@@ -186,7 +186,7 @@ struct sql_engine
     void show(std::queue<token_t>& tokens)
     {
         token_t token = pop_front(tokens);
-        if(tokens.size() || token.t != token_type::TABLES)
+        if(tokens.size() || token.t != token_t::TABLES)
         {
             std::cerr << "Only clause TABLES is implemented for SHOW.";
             throw 0;
@@ -214,7 +214,7 @@ struct sql_engine
     void describe(std::queue<token_t>& tokens)
     {
         token_t token = pop_front(tokens);
-        if(tokens.size() || token.t != token_type::IDENTITIFER)
+        if(tokens.size() || token.t != token_t::IDENTITIFER)
         {
             std::cerr << "DESCRIBE takes 1 identitifer (table name).";
             throw 0;
@@ -242,9 +242,9 @@ struct sql_engine
         token_t as = pop_front(tokens);
         token_t table_token = pop_front(tokens);
 
-        if(file_token.t == token_type::IDENTITIFER &&
-           as.t == token_type::AS &&
-           table_token.t == token_type::IDENTITIFER)
+        if(file_token.t == token_t::IDENTITIFER &&
+           as.t == token_t::AS &&
+           table_token.t == token_t::IDENTITIFER)
         {
             load_from_csv(boost::get<std::string>(table_token.u),
                           boost::get<std::string>(file_token.u));
@@ -276,33 +276,6 @@ struct sql_engine
             query_object.execute();*/
         }
         catch(...) {}
-        /*token_t token = pop_front(tokens);
-        try
-        {
-            switch(token.t)
-            {
-                case token_type::SELECT:
-                    select(tokens);
-                    break;
-                case token_type::SHOW:
-                    show(tokens);
-                    break;
-                case token_type::DESCRIBE:
-                    describe(tokens);
-                    break;
-                case token_type::LOAD:
-                    load(tokens);
-                    break;
-                case token_type::EXIT:
-                    exit_engine(tokens);
-                    break;
-                default: break;
-            }
-        }
-        catch(...)
-        {
-            while(!tokens.empty()) tokens.pop();
-        }*/
     }
 };
 
