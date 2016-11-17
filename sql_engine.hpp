@@ -10,9 +10,9 @@
 #include <unordered_map>
 #include <utility>
 
-#include "select.hpp"
-#include "lexer.hpp"
+#include "compile.hpp"
 #include "parser.hpp"
+#include "select.hpp"
 #include "table.hpp"
 #include "util.hpp"
 
@@ -271,9 +271,8 @@ struct sql_engine
     {
         try
         {
-            parse(tokens);
-        /*    auto query_obejct = compile_query(parse_tree, tables);
-            query_object.execute();*/
+            parse_tree_node p = parse(tokens);
+            auto query_obejct = compile_query(p, tables);
         }
         catch(...) {}
     }

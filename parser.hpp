@@ -8,7 +8,7 @@
 #include "lexer.hpp"
 #include "util.hpp"
 
-#define DEBUG
+//#define DEBUG
 
 int precedence(token_t t)
 {
@@ -55,21 +55,10 @@ struct parse_tree_node
 {
     enum abstract_type
     {
+        EMPTY,
         // Intermediatory states
-        UNRESOLVED,
-
-        // Concrete states
-        VALUE,
-        BOOL,
-        INT,
-        FLOAT,
-        STR,
-        IDENTIFIER,
         OPERATION,
-        ARITH_RES,
-        LOGICAL_RES,
-        TABLE_VIEW,
-        ROW_VIEW
+        VALUE,
     };
 
     abstract_type a_type;
@@ -77,15 +66,11 @@ struct parse_tree_node
     std::vector<parse_tree_node> args;
 
     parse_tree_node() :
-        a_type(UNRESOLVED), token()       , args() {};
-    parse_tree_node(token_t token_) :
-        a_type(VALUE),      token(token_) , args() {};
+        a_type(EMPTY), token()       , args() {};
+    parse_tree_node(abstract_type a, token_t token_) :
+        a_type(a),          token(token_) , args() {};
     parse_tree_node(token_t token_, std::vector<parse_tree_node> args_) :
         a_type(VALUE),      token(token_) , args(args_) {};
-    parse_tree_node(abstract_type t_, token_t token_) :
-        a_type(t_),         token(token_) , args() {};
-    parse_tree_node(abstract_type t_) :
-        a_type(t_),         token()       , args() {};
 };
 
 void print_parse_tree(parse_tree_node node, int level)
@@ -116,44 +101,6 @@ parse_tree_node bind_binary(token_t operation,
     }
 
     return parse_tree_node(operation, std::vector<parse_tree_node>{left, right});
-/*
-    switch(operation.token.t)
-    {
-        case token_t::PLUS:  case token_t::MINUS:
-        case token_t::STAR:  case token_t::DIVIDE:
-        case token_t::CARAT:
-        {
-            if(right.a_type != parse_tree_node::VALUE)
-            {
-                cerr << "Operator " << output_token(operation)
-                     << "requires a value type right argument.";
-            }
-
-            if(left.atype   != parse_tree_node::VALUE)
-            {
-                cerr << "Operator " << output_token(operation)
-                     << "requires a value type left argument.";
-            }
-
-            if(left.c_type == parse_tree_node::INT
-            {
-            }
-        }
-        case token_t::MOD:
-        {
-            break;
-        }
-        case token_t::LT:    case token_t::LTEQ:
-        case token_t::GT:    case token_t::GTEQ:
-        case token_t::AND:   case token_t::OR:
-        {
-            break;
-        }
-        case token_t::AS:
-        {
-
-        }
-    }*/
 }
 
 void bind_top(std::vector<token_t>& operations,
@@ -161,7 +108,6 @@ void bind_top(std::vector<token_t>& operations,
 {
     auto op = pop_back(operations);
 
-    std::cerr << output_token(op) << " " << op.t << " " << token_t::FROM << std::endl;
     switch(op.t)
     {
         // BINARY infix
@@ -261,13 +207,21 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
             case token_t::STR_LITERAL:   case token_t::IDENTITIFER:
             case token_t::TABLES:        case token_t::EXIT:
             {
-                parse_tree.push_back(parse_tree_node(parse_tree_node::VALUE, token));
+                if(parse_tree.empty() || parse_tree.back().a_type == parse_tree_node::OPERATION)
+                {
+                    parse_tree.push_back(parse_tree_node(parse_tree_node::VALUE, token));
+                }
+                else
+                {
+                    std::cerr << "Attempting to push unbindable value type: "
+                              << output_token(token) << std::endl;
+                }
                 break;
             }
             case token_t::PAREN_OPEN:    case token_t::FUNCTION:
             {
                 operations.push_back(token);
-                parse_tree.push_back(parse_tree_node(token));
+                parse_tree.push_back(parse_tree_node(parse_tree_node::OPERATION, token));
                 break;
             }
             case token_t::PAREN_CLOSE:
@@ -278,19 +232,26 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
                 }
                 operations.pop_back(); // PAREN_OPEN
 
-                std::stack<parse_tree_node> arg_list;
+                std::vector<parse_tree_node> arg_list;
                 while(parse_tree.size() && parse_tree.back().token.t != token_t::PAREN_OPEN)
                 {
-                    arg_list.push(pop_back(parse_tree));
+                    if(parse_tree.back().token.t != token_t::COMMA)
+                    {
+                        arg_list.push_back(pop_back(parse_tree));
+                    }
+                    else
+                    {
+                        pop_back(parse_tree);
+                    }
                 }
                 parse_tree.pop_back(); // PAREN_OPEN
 
                 if(parse_tree.size() && parse_tree.back().token.t == token_t::FUNCTION)
                 {
-                    while(!arg_list.empty()) parse_tree.back().args.push_back(pop_top(arg_list));
-                    operations.pop_back(); //FUNCTION
+                    auto tmp = pop_back(operations); //FUNCTION
+                    parse_tree.push_back(parse_tree_node(tmp, arg_list));
                 }
-                else // Tuples not supported
+                else // Tuples not supported, 1 args == normal expression
                 {
                     if(arg_list.size() > 1)
                     {
@@ -299,7 +260,7 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
                     }
                     else if(arg_list.size() == 1)
                     {
-                        parse_tree.push_back(pop_top(arg_list));
+                        parse_tree.push_back(pop_back(arg_list));
                     }
                 }
                 break;
@@ -317,7 +278,7 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
                 // would otherwise be valid across comma boundary. EG
                 // f(a + b, * c) being evaulated as f(a+b*c).
                 // Must be ignored when bind_toping variadic operations.
-                parse_tree.push_back(token);
+                parse_tree.push_back(parse_tree_node(parse_tree_node::OPERATION, token));
                 break;
             }
             // Resolve the semantics of minus and star symbol in the here.
@@ -328,9 +289,11 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
                 {
                     token.t = token_t::NEGATE;
                     operations.push_back(token);
-                    parse_tree.push_back(parse_tree_node(token));
+                    parse_tree.push_back(parse_tree_node(parse_tree_node::OPERATION, token));
+                    break; // Break here
                 }
-                goto DEFAULT;
+
+                goto DEFAULT; // Else treat normally
             }
             case token_t::STAR:
             {
@@ -343,7 +306,8 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
                 if(parse_tree.back().a_type != parse_tree_node::VALUE)
                 {
                     token.t = token_t::SELECT_ALL;
-                    parse_tree.push_back(parse_tree_node(token));
+                    parse_tree.push_back(parse_tree_node(parse_tree_node::OPERATION, token));
+                    break; // Break here, otherwise fallthrough
                 }
             }
             DEFAULT:
@@ -355,7 +319,7 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
                     bind_top(operations, parse_tree);
                 }
                 operations.push_back(token);
-                parse_tree.push_back(parse_tree_node(token));
+                parse_tree.push_back(parse_tree_node(parse_tree_node::OPERATION, token));
                 break;
             }
         }
@@ -376,7 +340,7 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
     for(auto& tree: parse_tree)
     {
         std::cerr << std::endl << std::endl;
-        print_parse_tree(parse_tree.back(), 0);
+        print_parse_tree(tree, 0);
     }
 #else
     if(parse_tree.size() > 1)
@@ -384,7 +348,7 @@ parse_tree_node to_parse_tree(std::vector<token_t>& tokens)
         for(auto& tree: parse_tree)
         {
             std::cerr << std::endl << std::endl;
-            print_parse_tree(parse_tree.back(), 0);
+            print_parse_tree(tree, 0);
         }
     }
 #endif

@@ -58,6 +58,8 @@ std::string output_token(token_t t)
 
         case token_t::FUNCTION:      stream << "FUNCTION"; break;
 
+        case token_t::SELECT_ALL:    stream << "SELECT_ALL"; break;
+        case token_t::NEGATE:        stream << "NEGATE"; break;
         case token_t::INVALID:       stream << "INVALID"; break;
     }
 
