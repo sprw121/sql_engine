@@ -45,12 +45,11 @@ std::string output_token(token_t t)
         case token_t::LOAD:          stream << "LOAD"; break;
         case token_t::EXIT:          stream << "EXIT"; break;
 
-        case token_t::LEFT:          stream << "LEFT"; break;
-        case token_t::RIGHT:         stream << "RIGHT"; break;
-        case token_t::OUTER:         stream << "OUTER"; break;
-        case token_t::INNER:         stream << "INNER"; break;
-        case token_t::CROSS:         stream << "CROSS"; break;
-        case token_t::JOIN:          stream << "JOIN"; break;
+        case token_t::LEFT_JOIN:     stream << "LEFT"; break;
+        case token_t::RIGHT_JOIN:    stream << "RIGHT"; break;
+        case token_t::OUTER_JOIN:    stream << "OUTER"; break;
+        case token_t::INNER_JOIN:    stream << "INNER"; break;
+        case token_t::CROSS_JOIN:    stream << "CROSS"; break;
         case token_t::ON:            stream << "ON"; break;
 
         case token_t::AND:           stream << "AND"; break;
@@ -96,18 +95,18 @@ static token_t::token_type resolve_token_string(std::string token_string)
     if(token_string == "exit" || token_string == "EXIT")
         return token_t::EXIT;
 
-    if(token_string == "left" || token_string == "LEFT")
-        return token_t::LEFT;
-    if(token_string == "right" || token_string == "RIGHT")
-        return token_t::RIGHT;
-    if(token_string == "outer" || token_string == "OUTER")
-        return token_t::OUTER;
-    if(token_string == "inner" || token_string == "INNER")
-        return token_t::INNER;
-    if(token_string == "cross" || token_string == "CROSS")
-        return token_t::CROSS;
-    if(token_string == "join" || token_string == "JOIN")
-        return token_t::JOIN;
+    if(token_string == "left_join" || token_string == "LEFT_JOIN" ||
+       token_string == "left_outer_join" || token_string == "LEFT_OUTER_JOIN")
+        return token_t::LEFT_JOIN;
+    if(token_string == "right_join" || token_string == "RIGHT_JOIN" ||
+       token_string == "right_outer_join" || token_string == "RIGHT_OUTER_JOIN")
+        return token_t::RIGHT_JOIN;
+    if(token_string == "outer_join" || token_string == "OUTER_JOIN")
+        return token_t::OUTER_JOIN;
+    if(token_string == "inner_join" || token_string == "INNER_JOIN")
+        return token_t::INNER_JOIN;
+    if(token_string == "cross_join" || token_string == "CROSS_JOIN")
+        return token_t::CROSS_JOIN;
     if(token_string == "on" || token_string == "ON")
         return token_t::ON;
 

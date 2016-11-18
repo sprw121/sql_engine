@@ -2,6 +2,7 @@
 #define _TABLE_H
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "boost/variant.hpp"
@@ -25,12 +26,11 @@ struct table
     std::vector<std::vector<cell>>  cells;
     unsigned int                    width, height;
 
-    table() : column_names(std::vector<std::string>()),
-              column_types(std::vector<type>()),
-              cells(std::vector<std::vector<cell>>()),
-              width(0), height(0) {};
+    table() = default;
     table(std::string& file_name);
     void describe();
 };
+
+typedef std::unordered_map<std::string, table> table_map_t;
 
 #endif

@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <iomanip>
@@ -8,6 +9,8 @@
 
 table::table(std::string& file_name)
 {
+    auto start = std::chrono::steady_clock::now();
+
     std::vector<std::vector<char*>> ir = parse_csv(file_name);
 
     for(auto name: ir[0])
@@ -19,6 +22,11 @@ table::table(std::string& file_name)
     cells        = load_from_ir(ir, column_types);
     width = cells.size();
     height = cells[0].size();
+
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "Loaded FILE " << file_name << " : "
+              << std::chrono::duration<double, std::milli>(end - start).count()
+              << "ms." << std::endl;
 }
 
 void table::describe()
@@ -46,3 +54,4 @@ void table::describe()
 
     std::cout << std::endl << std::endl;
 }
+

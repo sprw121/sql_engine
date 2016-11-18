@@ -6,6 +6,9 @@
 #include "boost/variant.hpp"
 #include "util.hpp"
 
+struct token_t;
+std::string output_token(token_t);
+struct lexer;
 
 struct token_t
 {
@@ -50,12 +53,11 @@ struct token_t
         LOAD,
         EXIT,
 
-        LEFT,
-        RIGHT,
-        OUTER,
-        INNER,
-        CROSS,
-        JOIN,
+        LEFT_JOIN,
+        RIGHT_JOIN,
+        OUTER_JOIN,
+        INNER_JOIN,
+        CROSS_JOIN,
         ON,
 
         FUNCTION,
@@ -77,8 +79,6 @@ struct token_t
     token_t(long l_)            : t(token_type::INT_LITERAL),   u(l_) {};
     token_t(double d_)          : t(token_type::FLOAT_LITERAL), u(d_) {};
 };
-
-std::string output_token(token_t);
 
 struct lexer
 {

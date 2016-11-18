@@ -1,11 +1,15 @@
 #ifndef _TABLE_VIEWS_H
 #define _TABLE_VIEWS_H
 
+#include <unordered_map>
+
+#include "lexer.hpp"
+#include "parser.hpp"
 #include "table.hpp"
 
 //#include "boost/variant/get.hpp"
 
-#include <unordered_map>
+#include "query_impl/identitifer.hpp"
 
 struct table_view
 {
@@ -23,10 +27,27 @@ struct table_iterator : table_view
     unsigned int current_row;
     table*       source;
 
-    table_iterator(table* source_) : current_row(0), source(source_) {};
+    table_iterator(parse_tree_node& node,
+                   table_map_t& tables)
+    {
+        current_row = 0;
+        auto id = identitifer_t(node);
+        auto table = tables.find(id.id);
+        if(table != tables.end())
+        {
+            source = &table->second;
+        }
+        else
+        {
+            std::cerr << "Could not resolve table " << id.id << std::endl;
+            throw 0;
+        }
+    }
+
 
     cell access_column(unsigned int i) override
     {
+        std::cout << current_row << " " << i << source->cells[i][current_row] << std::endl;
         return source->cells[i][current_row];
     }
 
