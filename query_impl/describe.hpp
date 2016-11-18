@@ -28,6 +28,8 @@ struct describe_t : query_object
         {
             table_identitifers.push_back(identitifer_t(arg));
         }
+
+        tables = &tables_;
     }
 
     void run() override

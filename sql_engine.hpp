@@ -31,7 +31,7 @@ struct sql_engine
         token_t token;
         while(1)
         {
-            std::cout << "> ";
+            std::cerr << "> ";
             std::getline(std::cin, line);
             lexer l(line);
             while(l.next_token(token))
@@ -55,106 +55,6 @@ struct sql_engine
             }
         }
     }
-/*
-    void iterator_table(std::string table_name)
-    {
-        table_iterator view = table_iterator(&tables[table_name]);
-        while(!view.empty())
-        {
-            for(unsigned int i = 0; i < view.width(); i++)
-            {
-                cell c = view.access_column(i);
-                std::cout << c <<" ";
-            }
-            std::cout << std::endl;
-            view.advance_row();
-        }
-    }
-
-    void iterator_inner_join()
-    {
-        table_iterator a(&tables["a"]), b(&tables["b"]);
-        inner_join<long long int> join(&a, 0, &b, 0);
-        while(!join.empty())
-        {
-            for(unsigned int i = 0; i < join.width(); i++)
-            {
-                cell c = join.access_column(i);
-                std::cout << c << " ";
-            }
-            std::cout << std::endl;
-            join.advance_row();
-        }
-
-    }
-
-    void iterator_outer_join()
-    {
-        table_iterator a(&tables["a"]), b(&tables["b"]);
-        outer_join<long long int> join(&a, 0, &b, 0);
-        while(!join.empty())
-        {
-            for(unsigned int i = 0; i < join.width(); i++)
-            {
-                cell c = join.access_column(i);
-                std::cout << c << " ";
-            }
-            std::cout << std::endl;
-            join.advance_row();
-        }
-
-    }
-
-    void iterator_left_outer_join()
-    {
-        table_iterator a(&tables["a"]), b(&tables["b"]);
-        left_outer_join<long long int> join(&a, 0, &b, 0);
-        while(!join.empty())
-        {
-            for(unsigned int i = 0; i < join.width(); i++)
-            {
-                cell c = join.access_column(i);
-                std::cout << c << " ";
-            }
-            std::cout << std::endl;
-            join.advance_row();
-        }
-
-    }
-
-    void iterator_right_outer_join()
-    {
-        table_iterator a(&tables["a"]), b(&tables["b"]);
-        right_outer_join<long long int> join(&a, 0, &b, 0);
-        while(!join.empty())
-        {
-            for(unsigned int i = 0; i < join.width(); i++)
-            {
-                cell c = join.access_column(i);
-                std::cout << c << " ";
-            }
-            std::cout << std::endl;
-            join.advance_row();
-        }
-
-    }
-
-    void iterator_cross_join()
-    {
-        table_iterator a(&tables["a"]), b(&tables["b"]);
-        cross_join<long long int> join(&a, &b);
-        while(!join.empty())
-        {
-            for(unsigned int i = 0; i < join.width(); i++)
-            {
-                cell c = join.access_column(i);
-                std::cout << c << " ";
-            }
-            std::cout << std::endl;
-            join.advance_row();
-        }
-
-    }*/
 
     void load_from_csv(const char* arg)
     {
@@ -177,9 +77,17 @@ struct sql_engine
     {
         try
         {
+            auto start = std::chrono::steady_clock::now();
+
             parse_tree_node p = parse(tokens);
             auto query = compile_query(p, tables);
             query->run();
+
+            auto end = std::chrono::steady_clock::now();
+
+            std::cerr << "Executed command in "
+                      << std::chrono::duration<double, std::milli>(end - start).count()
+                      << "ms." << std::endl;
         }
         catch(...) {}
     }
