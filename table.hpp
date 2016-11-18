@@ -1,6 +1,7 @@
 #ifndef _TABLE_H
 #define _TABLE_H
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -17,7 +18,7 @@ enum type
     STRING
 };
 
-typedef boost::variant<boost::blank, double, long long int, std::string> cell;
+typedef boost::variant<double, long long int, std::string> cell;
 
 struct table
 {

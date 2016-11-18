@@ -94,6 +94,9 @@ select_t::select_t(parse_tree_node& node,
             column_names.push_back(boost::get<std::string>(arg.token.u));
             columns.push_back(expression_t(arg, from));
         }
+        else if (arg.token.t == token_t::SELECT_ALL)
+        {
+        }
         else
         {
             std::stringstream stream;

@@ -32,13 +32,27 @@ from_t::from_t(parse_tree_node node,
             view = std::shared_ptr<table_view>(new table_iterator(arg, tables));
             break;
         }
-        case token_t::OUTER_JOIN:   case token_t::INNER_JOIN:
-        case token_t::LEFT_JOIN:    case token_t::RIGHT_JOIN:
+   /*     case token_t::OUTER_JOIN:
+        {
+            view = std::shared_ptr<table_view>(new outer_join(arg, tables));
+        }
+        case token_t::INNER_JOIN:
+        {
+            view = std::shared_ptr<table_view>(new inner_join(arg, tables));
+        }
+        case token_t::LEFT_JOIN:
+        {
+            view = std::shared_ptr<table_view>(new left_outer_join(arg, tables));
+        }
+        case token_t::RIGHT_JOIN:
+        {
+            view = std::shared_ptr<table_view>(new right_outer_join(arg, tables));
+        }
         case token_t::CROSS_JOIN:
         {
-            //view = std::shared_ptr<table_view>(new cross_join)
+            view = std::shared_ptr<table_view>(new cross_join(arg, tables))
             break;
-        }
+        }*/
         default:
         {
             std::cerr << "Unexpect argument to FROM." << std::endl;

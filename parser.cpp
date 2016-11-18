@@ -1,7 +1,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 
-#define DEBUG
+//#define DEBUG
 
 int precedence(token_t t)
 {

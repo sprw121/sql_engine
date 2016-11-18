@@ -45,10 +45,8 @@ struct table_iterator : table_view
         }
     }
 
-
     cell access_column(unsigned int i) override
     {
-        std::cout << current_row << " " << i << source->cells[i][current_row] << std::endl;
         return source->cells[i][current_row];
     }
 
@@ -92,6 +90,7 @@ struct table_iterator : table_view
     }
 };
 
+/*
 template<typename T>
 struct inner_join : table_view
 {
@@ -100,8 +99,8 @@ struct inner_join : table_view
     int left_column, right_column;
     std::unordered_map<T, int> index;
 
-    inner_join(table_iterator* left_,  int left_column_,
-               table_iterator* right_, int right_column_)
+    inner_join(parse_tree_node node,
+               table_map_t& tables)
     {
         if(left_->height() < right_->height())
         {
@@ -180,8 +179,8 @@ struct outer_join : table_view
     int left_column, right_column;
     std::unordered_map<T, int> index;
 
-    outer_join(table_iterator* left_,  int left_column_,
-               table_iterator* right_, int right_column_)
+    outer_join(parse_tree_node node,
+               table_map_t& tables)
     {
         if(left_->height() < right_->height())
         {
@@ -247,8 +246,8 @@ struct left_outer_join : table_view
     int l_col, r_col;
     std::unordered_map<T, int> index;
 
-    left_outer_join(table_iterator* left_,  int left_column_,
-                    table_iterator* right_, int right_column_)
+    left_outer_join(parse_tree_node node
+                    table_map_t tables)
     {
         left = left_;
         l_col = left_column_;
@@ -307,8 +306,8 @@ template<typename T> struct right_outer_join : table_view
     int l_col, r_col;
     std::unordered_map<T, int> index;
 
-    right_outer_join(table_iterator* left_,  int left_column_,
-                     table_iterator* right_, int right_column_)
+    right_outer_join(parse_tree_node node
+                     table_map_t& tables)
     {
         left = left_;
         l_col = left_column_;
@@ -366,8 +365,10 @@ struct cross_join : table_view
     table_iterator* left;
     table_iterator* right;
 
-    cross_join(table_iterator* left_, table_iterator* right_) :
-        left(left_), right(right_) {};
+    cross_join(parse_tree_node node,
+                table_map_t tables)
+    {
+    }
 
     cell access_column(unsigned int i) override
     {
@@ -403,6 +404,6 @@ struct cross_join : table_view
     {
         return left->height() * right->height();
     }
-};
+};*/
 
 #endif
