@@ -87,7 +87,7 @@ select_t::select_t(parse_tree_node& node,
         {
             as_t<expression_t> named_expression(arg, from);
             column_names.push_back(named_expression.name);
-            columns.push_back(named_expression.value);
+            columns.push_back(std::move(named_expression.value));
         }
         else if (arg.token.t == token_t::IDENTITIFER)
         {

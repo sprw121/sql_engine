@@ -20,6 +20,7 @@ struct table_view
     virtual bool empty() = 0;
     virtual unsigned int width() = 0;
     virtual unsigned int height() = 0;
+    virtual unsigned int resolve_column(std::string) { return 0; }
 };
 
 struct table_iterator : table_view
@@ -74,6 +75,20 @@ struct table_iterator : table_view
     unsigned int height() override
     {
         return source->height;
+    }
+
+    unsigned int resolve_column(std::string name) override
+    {
+        for(unsigned int i = 0; i < width(); i++)
+        {
+            if(source->column_names[i] == name)
+            {
+                return i;
+            }
+        }
+
+        std::cerr << "Could not resolved column name: " << name << std::endl;
+        throw 0;
     }
 };
 
