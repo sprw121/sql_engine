@@ -19,7 +19,7 @@ struct expression_t
     std::unique_ptr<expression_impl> impl;
 
     expression_t() = default;
-    expression_t(expression_t&& e) : impl(std::move(e.impl)) { std::cout << "Move" << std::endl;}
+    expression_t(expression_t&& e) : impl(std::move(e.impl)) { }
     expression_t& operator=(expression_t&& e) { impl = std::move(e.impl); return *this; }
     expression_t(parse_tree_node, from_t&);
 

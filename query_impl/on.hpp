@@ -11,9 +11,16 @@ struct on_t
     on_t() = default;
     on_t(parse_tree_node& node)
     {
-        if(node.args.size() == 2)
+        if(node.args.size() != 1)
         {
             std::cerr << "INTERNAL: Expected 2 args to ON." << std::endl;
+            throw 0;
+        }
+
+        node = node.args[0];
+        if(node.token.t != token_t::EQUAL)
+        {
+            std::cerr << "Expected EQUALS argument to ON." << std::endl;
             throw 0;
         }
 

@@ -38,6 +38,13 @@ struct table_iterator : table_view
     unsigned int current_row;
     table*       source;
 
+    table_iterator(const table_iterator& other)
+    {
+        current_row = 0;
+        name = other.name;
+        source = other.source;
+    }
+
     table_iterator(parse_tree_node& node,
                    table_map_t& tables)
     {
@@ -53,6 +60,7 @@ struct table_iterator : table_view
             std::cerr << "Could not resolve table " << id.id << std::endl;
             throw 0;
         }
+        name = id.id;
     }
 
     cell access_column(unsigned int i) override
@@ -85,11 +93,12 @@ struct table_iterator : table_view
         return source->height;
     }
 
-    unsigned int resolve_column(std::string name) override
+    unsigned int resolve_column(std::string column_name) override
     {
         for(unsigned int i = 0; i < width(); i++)
         {
-            if(source->column_names[i] == name)
+            std::cout << source->column_names[i] << " " << column_name << " " << i << std::endl;
+            if(source->column_names[i] == column_name)
             {
                 return i;
             }
@@ -97,6 +106,11 @@ struct table_iterator : table_view
 
         std::cerr << "Could not resolved column name: " << name << std::endl;
         throw 0;
+    }
+
+    std::shared_ptr<table_iterator> load() override
+    {
+        return std::shared_ptr<table_iterator>(new table_iterator(*this));
     }
 };
 
@@ -122,30 +136,39 @@ struct indexed_join : table_view
 
     indexed_join(std::shared_ptr<table_iterator> left_,
                  std::shared_ptr<table_iterator> right_,
-                 on_t on, index_side side_)
+                 on_t on, index_side side_) : left(left_), right(right_), side(side_)
     {
-        left = left_;
-        right = right_;
+        left_column = left->resolve_column(on.left_id.id);
+        right_column = right->resolve_column(on.right_id.id);
         if(side_ == HEIGHT)
         {
             side = left->height() > right->height() ? RIGHT : LEFT;
+        }
+        else
+        {
+            side = side_;
         }
 
         if(side == LEFT)
         {
             indexed_side = left;
+            indexed_column = left_column;
             iterator_side = right;
+            iterator_column = right_column;
         }
         else
         {
             indexed_side = right;
+            indexed_column = right_column;
             iterator_side = left;
+            iterator_column = left_column;
         }
 
-        for(unsigned int i = 0; i < left->height(); i++)
+        for(unsigned int i = 0; i < indexed_side->height(); i++)
         {
-            auto index_cell = left->source->cells[left_column][i];
+            auto index_cell = indexed_side->source->cells[indexed_column][i];
             auto found = index.find(index_cell);
+            std::cout << index_cell << " " << i << std::endl;
             if(found == index.end())
             {
                 index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
@@ -171,7 +194,7 @@ struct inner_join : indexed_join
             {
                 break;
             }
-            right->advance_row();
+            iterator_side->advance_row();
         }
     }
 
@@ -186,19 +209,19 @@ struct inner_join : indexed_join
             else
             {
                 auto found = index.find(left->access_column(left_column));
-                return right->source->cells[i][found->second[0]];
+                return right->source->cells[i - left->width()][found->second[0]];
             }
         }
         else
         {
             if(side == LEFT)
             {
-                return left->access_column(left->width());
+                auto found = index.find(right->access_column(right_column));
+                return left->source->cells[i][found->second[0]];
             }
             else
             {
-                auto found = index.find(left->access_column(left_column));
-                return right->source->cells[i][found->second[0]];
+                return left->access_column(i);
             }
         }
     }
@@ -206,7 +229,7 @@ struct inner_join : indexed_join
     void advance_row() override
     {
         iterator_side->advance_row();
-        while(!right->empty())
+        while(!iterator_side->empty())
         {
             auto found = index.find(iterator_side->access_column(iterator_column));
             if(found != index.end())
@@ -237,63 +260,118 @@ struct inner_join : indexed_join
 
 struct outer_join : indexed_join
 {
+    std::vector<bool> visited;
+    unsigned int next_unvisited;
+    bool iterator_complete;
     outer_join(std::shared_ptr<table_iterator> left_,
                std::shared_ptr<table_iterator> right_,
-               on_t on) : indexed_join(left_, right_, on, HEIGHT) { };
+               on_t on) : indexed_join(left_, right_, on, HEIGHT)
+    {
+        iterator_complete = false;
+
+        if(side == LEFT)
+        {
+            visited = std::vector<bool>(left->height());
+        }
+        else
+        {
+            visited = std::vector<bool>(right->height());
+        }
+
+    }
 
     cell access_column(unsigned int i) override
     {
-        if(i >= left->width())
+        if(!iterator_side->empty())
         {
-            if(side == LEFT)
+            if(i >= left->width())
             {
-                return right->access_column(i - left->width());
-            }
-            else
-            {
-                auto found = index.find(left->access_column(left_column));
-                if(found != index.end())
+                if(side == LEFT)
                 {
-                    return right->source->cells[i][found->second[0]];
+                    return right->access_column(i - left->width());
                 }
                 else
                 {
-                    return cell();
+                    auto found = index.find(left->access_column(left_column));
+                    if(found != index.end())
+                    {
+                        visited[found->second[0]] = true;
+                        return right->source->cells[i][found->second[0]];
+                    }
+                    else
+                    {
+                        return cell();
+                    }
+                }
+            }
+            else
+            {
+                if(side == LEFT)
+                {
+                    auto found = index.find(right->access_column(right_column));
+                    if(found != index.end())
+                    {
+                        visited[found->second[0]] = true;
+                        return left->source->cells[i][found->second[0]];
+                    }
+                    else
+                    {
+                        return cell();
+                    }
+                }
+                else
+                {
+                    return left->access_column(i);
                 }
             }
         }
         else
         {
-            if(side == LEFT)
+            if(i >= left->width())
             {
-                auto found = index.find(right->access_column(right_column));
-                if(found != index.end())
+                if(side == LEFT)
                 {
-                    return left->source->cells[i][found->second[0]];
+                    return cell();
+                }
+                else
+                {
+                    return right->source->cells[i - left->width()][next_unvisited];
+                }
+            }
+            else
+            {
+                if(side == LEFT)
+                {
+                    return left->source->cells[i][next_unvisited];
                 }
                 else
                 {
                     return cell();
                 }
-            }
-            else
-            {
-                return left->access_column(i);
             }
         }
     }
 
     void advance_row() override
     {
-        while(!iterator_side->empty())
+        if(!iterator_side->empty())
         {
             iterator_side->advance_row();
+        }
+        else
+        {
+            next_unvisited++;
+            while(next_unvisited < visited.size() &&
+                  visited[next_unvisited])
+            {
+                next_unvisited++;
+            }
         }
     }
 
     bool empty() override
     {
-        return index.size() == 0 || iterator_side->empty();
+        return iterator_side->empty() && next_unvisited == indexed_side->height();
     }
     unsigned int width() override
     {
@@ -380,6 +458,16 @@ struct right_outer_join : indexed_join
 
     void advance_row() override
     {
+        auto found = index.find(right->access_column(right_column));
+        if(found != index.end())
+        {
+            std::cout << found->second[0];
+        }
+        else
+        {
+            std::cout << -1;
+        }
+        std::cout << " : " << right->current_row << std::endl;
         iterator_side->advance_row();
     }
 
@@ -485,19 +573,23 @@ struct view_factory
 
                 if(node.token.t == token_t::OUTER_JOIN)
                 {
-                    view = std::make_shared<outer_join>(left_side, right_side, on);
+                    view = std::shared_ptr<table_view>(
+                                new outer_join(left_side, right_side, on));
                 }
                 if(node.token.t == token_t::INNER_JOIN)
                 {
-                    view = std::make_shared<inner_join>(left_side, right_side, on);
+                    view = std::shared_ptr<table_view>(
+                                new inner_join(left_side, right_side, on));
                 }
                 if(node.token.t == token_t::LEFT_JOIN)
                 {
-                    view = std::make_shared<left_outer_join>(left_side, right_side, on);
+                    view = std::shared_ptr<table_view>(
+                                new left_outer_join(left_side, right_side, on));
                 }
                 if(node.token.t == token_t::RIGHT_JOIN)
                 {
-                    view = std::make_shared<right_outer_join>(left_side, right_side, on);
+                    view = std::shared_ptr<table_view>(
+                                new right_outer_join(left_side, right_side, on));
                 }
                 break;
             }
@@ -517,7 +609,7 @@ struct view_factory
                 auto right_view         = right_container.view;
                 auto right_side         = right_view->load();
 
-                view = std::make_shared<cross_join>(left_side, right_side);
+                view = std::shared_ptr<table_view>(new cross_join(left_side, right_side));
                 break;
             }
             default:
@@ -528,11 +620,5 @@ struct view_factory
         }
     }
 };
-/*
-std::shared_ptr<table_view> view_factory(parse_tree_node node, table_map_t& tables)
-{
-    std::shared_ptr<table_view> view;
 
-    return view;
-};*/
 #endif

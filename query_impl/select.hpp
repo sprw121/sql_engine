@@ -44,6 +44,10 @@ struct select_t : query_object, table_view
             {
                 std::cout << column.call() << " ";
             }*/
+            for(int i = 0; i < from.view->width(); i++)
+            {
+                std::cerr << from.view->access_column(i) << " ";
+            }
             std::cout << std::endl;
             advance_row();
         }

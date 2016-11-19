@@ -209,7 +209,6 @@ struct column_accessor : expression_impl
         node.print();
         auto column_name = boost::get<std::string>(node.token.u);
         column = from.view->resolve_column(column_name);
-        std::cout << column_name << " " << column << std::endl;
         view = from.view;
     }
 
