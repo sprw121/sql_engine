@@ -45,6 +45,9 @@ table::table(table_view& view)
 
     column_names = view.column_names;
     column_types = view.column_types;
+
+    width        = cells.size();
+    height       = cells[0].size();
 }
 
 void table::describe()

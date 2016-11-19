@@ -350,7 +350,7 @@ struct outer_join : indexed_join
                     if(found != index.end())
                     {
                         visited[found->second[0]] = true;
-                        return right->source->cells[i][found->second[0]];
+                        return right->source->cells[i - left->width()][found->second[0]];
                     }
                     else
                     {
@@ -521,7 +521,6 @@ struct right_outer_join : indexed_join
         {
             std::cout << -1;
         }
-        std::cout << " : " << right->current_row << std::endl;
         iterator_side->advance_row();
     }
 
