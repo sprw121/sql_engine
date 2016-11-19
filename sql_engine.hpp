@@ -89,7 +89,7 @@ struct sql_engine
                       << std::chrono::duration<double, std::milli>(end - start).count()
                       << "ms." << std::endl;
         }
-        catch(...) {}
+        catch(int) {}
     }
 };
 

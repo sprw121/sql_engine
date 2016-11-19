@@ -1,15 +1,24 @@
 #ifndef _TABLE_VIEWS_H
 #define _TABLE_VIEWS_H
 
+#include <memory>
 #include <unordered_map>
 
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "table.hpp"
 
-//#include "boost/variant/get.hpp"
+#include "boost/functional/hash.hpp"
 
 #include "query_impl/identitifer.hpp"
+#include "query_impl/on.hpp"
+
+
+typedef std::unordered_map<cell,
+                           std::vector<unsigned int>,
+                           boost::hash<cell>> index_t;
+
+struct table_iterator;
 
 struct table_view
 {
@@ -20,6 +29,7 @@ struct table_view
     virtual bool empty() = 0;
     virtual unsigned int width() = 0;
     virtual unsigned int height() = 0;
+    virtual std::shared_ptr<table_iterator> load() { };
     virtual unsigned int resolve_column(std::string) { return 0; }
 };
 
@@ -90,41 +100,45 @@ struct table_iterator : table_view
     }
 };
 
-/*
-template<typename T>
 struct inner_join : table_view
 {
-    table_iterator* left;
-    table_iterator* right;
+    std::shared_ptr<table_iterator> left;
+    std::shared_ptr<table_iterator> right;
     int left_column, right_column;
-    std::unordered_map<T, int> index;
+    index_t index;
 
-    inner_join(parse_tree_node node,
-               table_map_t& tables)
+    inner_join(std::shared_ptr<table_iterator> left_,
+               std::shared_ptr<table_iterator> right_,
+               on_t on)
     {
         if(left_->height() < right_->height())
         {
             left = left_;
             right = right_;
-            left_column = left_column_;
-            right_column = right_column_;
         }
         else
         {
             left = right_;
             right = left_;
-            left_column = right_column_;
-            right_column = left_column_;;
         }
 
         for(unsigned int i = 0; i < left->height(); i++)
         {
-            index[boost::get<T>(left->source->cells[left_column][i])] = i;
+            auto index_cell = left->source->cells[left_column][i];
+            auto found = index.find(index_cell);
+            if(found == index.end())
+            {
+                index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
+            }
+            else
+            {
+                found->second.push_back(i);
+            }
         }
 
         while(!right->empty())
         {
-            if(index.find(boost::get<T>(right->access_column(right_column))) != index.end())
+            if(index.find(right->access_column(right_column)) != index.end())
             {
                 break;
             }
@@ -140,7 +154,8 @@ struct inner_join : table_view
         }
         else
         {
-            return left->source->cells[i][index[boost::get<T>(right->access_column(right_column))]];
+            auto found = index.find(right->access_column(right_column));
+            return left->source->cells[i][found->second[0]];
         }
     }
 
@@ -149,7 +164,7 @@ struct inner_join : table_view
         right->advance_row();
         while(!right->empty())
         {
-            if(index.find(boost::get<T>(right->access_column(right_column))) != index.end())
+            if(index.find(right->access_column(right_column)) != index.end())
             {
                 break;
             }
@@ -171,37 +186,41 @@ struct inner_join : table_view
     }
 };
 
-template<typename T>
 struct outer_join : table_view
 {
-    table_iterator* left;
-    table_iterator* right;
+    std::shared_ptr<table_iterator> left;
+    std::shared_ptr<table_iterator> right;
     int left_column, right_column;
-    std::unordered_map<T, int> index;
+    index_t index;
 
-    outer_join(parse_tree_node node,
-               table_map_t& tables)
+    outer_join(std::shared_ptr<table_iterator> left_,
+               std::shared_ptr<table_iterator> right_,
+               on_t on)
     {
         if(left_->height() < right_->height())
         {
             left = left_;
             right = right_;
-            left_column = left_column_;
-            right_column = right_column_;
         }
         else
         {
             left = right_;
             right = left_;
-            left_column = right_column_;
-            right_column = left_column_;;
         }
 
         for(unsigned int i = 0; i < left->height(); i++)
         {
-            index[boost::get<T>(left->source->cells[left_column][i])] = i;
+            auto index_cell = left->source->cells[left_column][i];
+            auto found = index.find(index_cell);
+            if(found == index.end())
+            {
+                index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
+            }
+            else
+            {
+                found->second.push_back(i);
+            }
         }
-        std::cout << index.size() << std::endl;
     }
 
     cell access_column(unsigned int i) override
@@ -212,7 +231,15 @@ struct outer_join : table_view
         }
         else
         {
-            return left->source->cells[i][index[boost::get<T>(right->access_column(right_column))]];
+            auto found = index.find(right->access_column(right_column));
+            if(found != index.end())
+            {
+                return left->source->cells[i][found->second[0]];
+            }
+            else
+            {
+                return cell();
+            }
         }
     }
 
@@ -238,25 +265,32 @@ struct outer_join : table_view
     }
 };
 
-template<typename T>
 struct left_outer_join : table_view
 {
-    table_iterator* left;
-    table_iterator* right;
+    std::shared_ptr<table_iterator> left;
+    std::shared_ptr<table_iterator> right;
     int l_col, r_col;
-    std::unordered_map<T, int> index;
+    index_t index;
 
-    left_outer_join(parse_tree_node node
-                    table_map_t tables)
+    left_outer_join(std::shared_ptr<table_iterator> left_,
+                    std::shared_ptr<table_iterator> right_,
+                    on_t on)
     {
         left = left_;
-        l_col = left_column_;
         right = right_;
-        r_col = right_column_;
 
-        for(unsigned int i = 0; i < right->height(); i++)
+        for(unsigned int i = 0; i < left->height(); i++)
         {
-            index[boost::get<T>(right->source->cells[r_col][i])] = i;
+            auto index_cell = right->source->cells[r_col][i];
+            auto found = index.find(index_cell);
+            if(found == index.end())
+            {
+                index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
+            }
+            else
+            {
+                found->second.push_back(i);
+            }
         }
     }
 
@@ -264,10 +298,10 @@ struct left_outer_join : table_view
     {
         if(i >= left->width())
         {
-            if(index.find(boost::get<T>(left->access_column(l_col))) != index.end())
+            auto found = index.find(left->access_column(l_col));
+            if(found != index.end())
             {
-                return right->source->cells
-                            [i-left->width()][index[boost::get<T>(left->access_column(l_col))]];
+                return right->source->cells[i - left->width()][found->second[0]];
             }
             else
             {
@@ -299,24 +333,32 @@ struct left_outer_join : table_view
     }
 };
 
-template<typename T> struct right_outer_join : table_view
+struct right_outer_join : table_view
 {
-    table_iterator* left;
-    table_iterator* right;
+    std::shared_ptr<table_iterator> left;
+    std::shared_ptr<table_iterator> right;
     int l_col, r_col;
-    std::unordered_map<T, int> index;
+    index_t index;
 
-    right_outer_join(parse_tree_node node
-                     table_map_t& tables)
+    right_outer_join(std::shared_ptr<table_iterator> left_,
+                     std::shared_ptr<table_iterator> right_,
+                     on_t on)
     {
         left = left_;
-        l_col = left_column_;
         right = right_;
-        r_col = right_column_;
 
-        for(unsigned int i = 0; i < right->height(); i++)
+        for(unsigned int i = 0; i < left->height(); i++)
         {
-            index[boost::get<T>(left->source->cells[l_col][i])] = i;
+            auto index_cell = left->source->cells[l_col][i];
+            auto found = index.find(index_cell);
+            if(found == index.end())
+            {
+                index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
+            }
+            else
+            {
+                found->second.push_back(i);
+            }
         }
     }
 
@@ -328,10 +370,10 @@ template<typename T> struct right_outer_join : table_view
         }
         else
         {
-            if(index.find(boost::get<T>(right->access_column(r_col))) != index.end())
+            auto found = index.find(right->access_column(r_col));
+            if(found != index.end())
             {
-                return left->source->cells
-                            [i][index[boost::get<T>(right->access_column(r_col))]];
+                return left->source->cells[i][found->second[0]];
             }
             else
             {
@@ -359,16 +401,13 @@ template<typename T> struct right_outer_join : table_view
     }
 };
 
-template<typename T>
 struct cross_join : table_view
 {
-    table_iterator* left;
-    table_iterator* right;
+    std::shared_ptr<table_iterator> left;
+    std::shared_ptr<table_iterator> right;
 
-    cross_join(parse_tree_node node,
-                table_map_t tables)
-    {
-    }
+    cross_join(std::shared_ptr<table_iterator> left_,
+               std::shared_ptr<table_iterator> right_) : left(left_), right(right_) {};
 
     cell access_column(unsigned int i) override
     {
@@ -404,6 +443,100 @@ struct cross_join : table_view
     {
         return left->height() * right->height();
     }
-};*/
+};
 
+struct view_factory
+{
+    std::shared_ptr<table_view> view;
+
+    view_factory(parse_tree_node node, table_map_t& tables)
+    {
+        switch(node.token.t)
+        {
+            case token_t::AS:
+            {
+                if(node.args.size() != 2)
+                {
+                    std::cerr << "INTERNAL: Not enough args to AS." << std::endl;
+                    throw 0;
+                }
+            }
+            case token_t::IDENTITIFER:
+            {
+                view = std::make_shared<table_iterator>(node, tables);
+                break;
+            }
+            case token_t::OUTER_JOIN:
+            case token_t::INNER_JOIN:
+            case token_t::LEFT_JOIN:
+            case token_t::RIGHT_JOIN:
+            {
+                if(node.args.size() != 3)
+                {
+                    std::cerr << "Not enough args to " << output_token(node.token)
+                              << ". (perhaps ON required>)" << std::endl;
+                    throw 0;
+                }
+
+                on_t on(node.args[0]);
+                auto left_container     = view_factory(node.args[2], tables);
+                auto left_view          = left_container.view;
+                auto left_side          = left_view->load();
+
+                auto right_container    = view_factory(node.args[1], tables);
+                auto right_view         = right_container.view;
+                auto right_side         = right_view->load();
+
+                if(node.token.t == token_t::OUTER_JOIN)
+                {
+                    view = std::make_shared<outer_join>(left_side, right_side, on);
+                }
+                if(node.token.t == token_t::INNER_JOIN)
+                {
+                    view = std::make_shared<inner_join>(left_side, right_side, on);
+                }
+                if(node.token.t == token_t::LEFT_JOIN)
+                {
+                    view = std::make_shared<left_outer_join>(left_side, right_side, on);
+                }
+                if(node.token.t == token_t::RIGHT_JOIN)
+                {
+                    view = std::make_shared<right_outer_join>(left_side, right_side, on);
+                }
+                break;
+            }
+            case token_t::CROSS_JOIN:
+            {
+                if(node.args.size() != 2)
+                {
+                    std::cerr << "INTERNAL: Not enough args to CROSS_JOIN." << std::endl;
+                    throw 0;
+                }
+
+                auto left_container     = view_factory(node.args[0], tables);
+                auto left_view          = left_container.view;
+                auto left_side          = left_view->load();
+
+                auto right_container    = view_factory(node.args[1], tables);
+                auto right_view         = right_container.view;
+                auto right_side         = right_view->load();
+
+                view = std::make_shared<cross_join>(left_side, right_side);
+                break;
+            }
+            default:
+            {
+                std::cerr << "Unexpect argument to FROM." << std::endl;
+                throw 0;
+            }
+        }
+    }
+};
+/*
+std::shared_ptr<table_view> view_factory(parse_tree_node node, table_map_t& tables)
+{
+    std::shared_ptr<table_view> view;
+
+    return view;
+};*/
 #endif
