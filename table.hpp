@@ -2,6 +2,7 @@
 #define _TABLE_H
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -19,6 +20,7 @@ enum type
 };
 
 typedef boost::variant<double, long long int, std::string> cell;
+struct table_view;
 
 struct table
 {
@@ -29,9 +31,10 @@ struct table
 
     table() = default;
     table(std::string& file_name);
+    table(table_view& view);
     void describe();
 };
 
-typedef std::unordered_map<std::string, table> table_map_t;
+typedef std::unordered_map<std::string, std::shared_ptr<table>> table_map_t;
 
 #endif

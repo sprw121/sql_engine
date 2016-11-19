@@ -35,22 +35,8 @@ struct select_t : query_object, table_view
     bool empty() override;
     unsigned int width() override;
     unsigned int height() override;
+    std::shared_ptr<table_iterator> load() override;
 
-    void run()
-    {
-        while(!from.view->empty())
-        {
-/*            for(auto& column: columns)
-            {
-                std::cout << column.call() << " ";
-            }*/
-            for(int i = 0; i < from.view->width(); i++)
-            {
-                std::cerr << from.view->access_column(i) << " ";
-            }
-            std::cout << std::endl;
-            advance_row();
-        }
-    }
+    void run() override;
 };
 #endif

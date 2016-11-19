@@ -1,11 +1,13 @@
 #ifndef _LOAD_H
 #define _LOAD_H
 
+#include <memory>
 #include <vector>
 
 #include "../parser.hpp"
 #include "../table.hpp"
 
+#include "as.hpp"
 #include "identitifer.hpp"
 
 struct load_t : query_object
@@ -50,7 +52,7 @@ struct load_t : query_object
                 throw 0;
             }
 
-            tables->emplace(std::make_pair(table_name, table(csv)));
+            tables->emplace(std::make_pair(table_name, std::make_shared<table>(csv)));
         }
     }
 };

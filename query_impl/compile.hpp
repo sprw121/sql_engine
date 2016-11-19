@@ -75,6 +75,7 @@ std::unique_ptr<query_object> compile_query(parse_tree_node& node,
     }
 
     std::cerr << "No command seen in query." << std::endl;
+    throw 0;
 };
 
 #endif

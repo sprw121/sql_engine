@@ -132,3 +132,27 @@ unsigned int select_t::height()
 {
     return from.view->height();
 }
+
+void select_t::run()
+{
+    for(auto& col_name : from.view->column_names)
+        std::cout << col_name << std::endl;
+    while(!from.view->empty())
+    {
+/*            for(auto& column: columns)
+        {
+            std::cout << column.call() << " ";
+        }*/
+        for(int i = 0; i < from.view->width(); i++)
+        {
+            std::cerr << from.view->access_column(i) << " ";
+        }
+        std::cout << std::endl;
+        advance_row();
+    }
+}
+
+std::shared_ptr<table_iterator> select_t::load()
+{
+    return std::make_shared<table_iterator>(*this);
+}

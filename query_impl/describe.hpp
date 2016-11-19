@@ -39,7 +39,7 @@ struct describe_t : query_object
             auto table = tables->find(t.id);
             if(table != tables->end())
             {
-                table->second.describe();
+                table->second->describe();
             }
             else
             {

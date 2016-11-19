@@ -20,7 +20,7 @@
 
 struct sql_engine
 {
-    std::unordered_map<std::string, table> tables;
+    table_map_t tables;
 
     sql_engine() : tables() {};
 
@@ -70,7 +70,7 @@ struct sql_engine
             throw 0;
         }
 
-        tables.emplace(std::make_pair(table_name, table(file_name)));
+        tables.emplace(std::make_pair(table_name, std::make_shared<table>(file_name)));
     }
 
     void execute_query(std::vector<token_t>& tokens)

@@ -23,44 +23,86 @@ struct table_iterator;
 struct table_view
 {
     std::string name;
+    std::vector<std::string> column_names;
+    std::vector<type> column_types;
 
+    table_view() = default;
     virtual cell access_column(unsigned int i) = 0;
     virtual void advance_row() = 0;
     virtual bool empty() = 0;
     virtual unsigned int width() = 0;
     virtual unsigned int height() = 0;
-    virtual std::shared_ptr<table_iterator> load() { };
-    virtual unsigned int resolve_column(std::string) { return 0; }
+    virtual std::shared_ptr<table_iterator> load() = 0;
+
+    unsigned int resolve_column(std::string column_name)
+    {
+        if(name != "")
+        {
+            std::string qualified_column_name = name + "." + column_name;
+            for(unsigned int i = 0; i < width(); i++)
+            {
+                if(column_names[i] == qualified_column_name)
+                {
+                    return i;
+                }
+            }
+        }
+
+        for(unsigned int i = 0; i < width(); i++)
+        {
+            if(column_names[i] == column_name)
+            {
+                return i;
+            }
+        }
+
+        std::cerr << "Could not resolved column name: " << column_name << std::endl;
+        throw 0;
+    }
 };
 
 struct table_iterator : table_view
 {
-    unsigned int current_row;
-    table*       source;
+    unsigned int            current_row;
+    std::shared_ptr<table>  source;
 
-    table_iterator(const table_iterator& other)
+    table_iterator(const table_iterator& other) : table_view()
     {
         current_row = 0;
         name = other.name;
         source = other.source;
+        column_names = other.column_names;
+        column_types = other.column_types;
+    }
+
+    table_iterator(table_view& view) : table_view()
+    {
+        current_row = 0;
+        source = std::make_shared<table>(view);
+        name = view.name;
+        column_names = source->column_names;
+        column_types = source->column_types;
     }
 
     table_iterator(parse_tree_node& node,
-                   table_map_t& tables)
+                   table_map_t& tables) : table_view()
     {
         current_row = 0;
         auto id = identitifer_t(node);
         auto table = tables.find(id.id);
         if(table != tables.end())
         {
-            source = &table->second;
+            source = table->second;
         }
         else
         {
             std::cerr << "Could not resolve table " << id.id << std::endl;
             throw 0;
         }
+        std::cout << id.id << std::endl;
         name = id.id;
+        column_names = table->second->column_names;
+        column_types = table->second->column_types;
     }
 
     cell access_column(unsigned int i) override
@@ -93,21 +135,6 @@ struct table_iterator : table_view
         return source->height;
     }
 
-    unsigned int resolve_column(std::string column_name) override
-    {
-        for(unsigned int i = 0; i < width(); i++)
-        {
-            std::cout << source->column_names[i] << " " << column_name << " " << i << std::endl;
-            if(source->column_names[i] == column_name)
-            {
-                return i;
-            }
-        }
-
-        std::cerr << "Could not resolved column name: " << name << std::endl;
-        throw 0;
-    }
-
     std::shared_ptr<table_iterator> load() override
     {
         return std::shared_ptr<table_iterator>(new table_iterator(*this));
@@ -136,7 +163,8 @@ struct indexed_join : table_view
 
     indexed_join(std::shared_ptr<table_iterator> left_,
                  std::shared_ptr<table_iterator> right_,
-                 on_t on, index_side side_) : left(left_), right(right_), side(side_)
+                 on_t& on, index_side side_) : left(left_), right(right_),
+                                               side(side_), table_view()
     {
         left_column = left->resolve_column(on.left_id.id);
         right_column = right->resolve_column(on.right_id.id);
@@ -178,6 +206,35 @@ struct indexed_join : table_view
                 found->second.push_back(i);
             }
         }
+
+        column_types.insert(column_types.end(),
+                            left->column_types.begin(),
+                            left->column_types.end());
+        column_types.insert(column_types.end(),
+                            right->column_types.begin(),
+                            right->column_types.end());
+
+        for(auto& col_name : left->column_names)
+        {
+             if(left->name != "")
+                column_names.push_back(left->name + "." + col_name);
+            else
+                column_names.push_back(col_name);
+
+        }
+        for(auto& col_name : right->column_names)
+        {
+             if(right->name != "")
+                column_names.push_back(right->name + "." + col_name);
+            else
+                column_names.push_back(col_name);
+
+        }
+    }
+
+    std::shared_ptr<table_iterator> load()
+    {
+        return std::make_shared<table_iterator>(*this);
     }
 };
 
@@ -262,13 +319,10 @@ struct outer_join : indexed_join
 {
     std::vector<bool> visited;
     unsigned int next_unvisited;
-    bool iterator_complete;
     outer_join(std::shared_ptr<table_iterator> left_,
                std::shared_ptr<table_iterator> right_,
-               on_t on) : indexed_join(left_, right_, on, HEIGHT)
+               on_t& on) : indexed_join(left_, right_, on, HEIGHT)
     {
-        iterator_complete = false;
-
         if(side == LEFT)
         {
             visited = std::vector<bool>(left->height());
@@ -491,7 +545,26 @@ struct cross_join : table_view
     std::shared_ptr<table_iterator> right;
 
     cross_join(std::shared_ptr<table_iterator> left_,
-               std::shared_ptr<table_iterator> right_) : left(left_), right(right_) {};
+               std::shared_ptr<table_iterator> right_) : left(left_), right(right_),
+                                                         table_view()
+    {
+        for(auto& col_name : left->column_names)
+        {
+             if(left->name != "")
+                column_names.push_back(left->name + "." + col_name);
+            else
+                column_names.push_back(col_name);
+
+        }
+        for(auto& col_name : right->column_names)
+        {
+             if(right->name != "")
+                column_names.push_back(right->name + "." + col_name);
+            else
+                column_names.push_back(col_name);
+
+        }
+    }
 
     cell access_column(unsigned int i) override
     {
@@ -526,6 +599,11 @@ struct cross_join : table_view
     unsigned int height() override
     {
         return left->height() * right->height();
+    }
+
+    std::shared_ptr<table_iterator> load()
+    {
+        return std::make_shared<table_iterator>(*this);
     }
 };
 
