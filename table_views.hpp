@@ -100,188 +100,51 @@ struct table_iterator : table_view
     }
 };
 
-struct inner_join : table_view
+struct indexed_join : table_view
 {
+    enum index_side
+    {
+        LEFT,
+        RIGHT,
+        HEIGHT
+    };
+
+    std::shared_ptr<table_iterator> indexed_side;
+    std::shared_ptr<table_iterator> iterator_side;
+    int iterator_column, indexed_column;
+
     std::shared_ptr<table_iterator> left;
     std::shared_ptr<table_iterator> right;
     int left_column, right_column;
+
     index_t index;
+    index_side side;
 
-    inner_join(std::shared_ptr<table_iterator> left_,
-               std::shared_ptr<table_iterator> right_,
-               on_t on)
-    {
-        if(left_->height() < right_->height())
-        {
-            left = left_;
-            right = right_;
-        }
-        else
-        {
-            left = right_;
-            right = left_;
-        }
-
-        for(unsigned int i = 0; i < left->height(); i++)
-        {
-            auto index_cell = left->source->cells[left_column][i];
-            auto found = index.find(index_cell);
-            if(found == index.end())
-            {
-                index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
-            }
-            else
-            {
-                found->second.push_back(i);
-            }
-        }
-
-        while(!right->empty())
-        {
-            if(index.find(right->access_column(right_column)) != index.end())
-            {
-                break;
-            }
-            right->advance_row();
-        }
-    }
-
-    cell access_column(unsigned int i) override
-    {
-        if(i >= left->width())
-        {
-            return right->access_column(i - left->width());
-        }
-        else
-        {
-            auto found = index.find(right->access_column(right_column));
-            return left->source->cells[i][found->second[0]];
-        }
-    }
-
-    void advance_row() override
-    {
-        right->advance_row();
-        while(!right->empty())
-        {
-            if(index.find(right->access_column(right_column)) != index.end())
-            {
-                break;
-            }
-            right->advance_row();
-        }
-    }
-
-    bool empty() override
-    {
-        return index.size() == 0 || right->empty();
-    }
-    unsigned int width() override
-    {
-        return left->width() + right->width();
-    }
-    unsigned int height() override
-    {
-        return left->height() > right->height() ? right->height() : left->height();
-    }
-};
-
-struct outer_join : table_view
-{
-    std::shared_ptr<table_iterator> left;
-    std::shared_ptr<table_iterator> right;
-    int left_column, right_column;
-    index_t index;
-
-    outer_join(std::shared_ptr<table_iterator> left_,
-               std::shared_ptr<table_iterator> right_,
-               on_t on)
-    {
-        if(left_->height() < right_->height())
-        {
-            left = left_;
-            right = right_;
-        }
-        else
-        {
-            left = right_;
-            right = left_;
-        }
-
-        for(unsigned int i = 0; i < left->height(); i++)
-        {
-            auto index_cell = left->source->cells[left_column][i];
-            auto found = index.find(index_cell);
-            if(found == index.end())
-            {
-                index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
-            }
-            else
-            {
-                found->second.push_back(i);
-            }
-        }
-    }
-
-    cell access_column(unsigned int i) override
-    {
-        if(i >= left->width())
-        {
-            return right->access_column(i - left->width());
-        }
-        else
-        {
-            auto found = index.find(right->access_column(right_column));
-            if(found != index.end())
-            {
-                return left->source->cells[i][found->second[0]];
-            }
-            else
-            {
-                return cell();
-            }
-        }
-    }
-
-    void advance_row() override
-    {
-        while(!right->empty())
-        {
-            right->advance_row();
-        }
-    }
-
-    bool empty() override
-    {
-        return index.size() == 0 || right->empty();
-    }
-    unsigned int width() override
-    {
-        return left->width() + right->width();
-    }
-    unsigned int height() override
-    {
-        return left->height() > right->height() ? right->height() : left->height();
-    }
-};
-
-struct left_outer_join : table_view
-{
-    std::shared_ptr<table_iterator> left;
-    std::shared_ptr<table_iterator> right;
-    int l_col, r_col;
-    index_t index;
-
-    left_outer_join(std::shared_ptr<table_iterator> left_,
-                    std::shared_ptr<table_iterator> right_,
-                    on_t on)
+    indexed_join(std::shared_ptr<table_iterator> left_,
+                 std::shared_ptr<table_iterator> right_,
+                 on_t on, index_side side_)
     {
         left = left_;
         right = right_;
+        if(side_ == HEIGHT)
+        {
+            side = left->height() > right->height() ? RIGHT : LEFT;
+        }
+
+        if(side == LEFT)
+        {
+            indexed_side = left;
+            iterator_side = right;
+        }
+        else
+        {
+            indexed_side = right;
+            iterator_side = left;
+        }
 
         for(unsigned int i = 0; i < left->height(); i++)
         {
-            auto index_cell = right->source->cells[r_col][i];
+            auto index_cell = left->source->cells[left_column][i];
             auto found = index.find(index_cell);
             if(found == index.end())
             {
@@ -293,12 +156,168 @@ struct left_outer_join : table_view
             }
         }
     }
+};
+
+struct inner_join : indexed_join
+{
+    inner_join(std::shared_ptr<table_iterator> left_,
+               std::shared_ptr<table_iterator> right_,
+               on_t on) : indexed_join(left_, right_, on, HEIGHT)
+    {
+        while(!iterator_side->empty())
+        {
+            auto found = index.find(iterator_side->access_column(iterator_column));
+            if(found != index.end())
+            {
+                break;
+            }
+            right->advance_row();
+        }
+    }
 
     cell access_column(unsigned int i) override
     {
         if(i >= left->width())
         {
-            auto found = index.find(left->access_column(l_col));
+            if(side == LEFT)
+            {
+                return right->access_column(i - left->width());
+            }
+            else
+            {
+                auto found = index.find(left->access_column(left_column));
+                return right->source->cells[i][found->second[0]];
+            }
+        }
+        else
+        {
+            if(side == LEFT)
+            {
+                return left->access_column(left->width());
+            }
+            else
+            {
+                auto found = index.find(left->access_column(left_column));
+                return right->source->cells[i][found->second[0]];
+            }
+        }
+    }
+
+    void advance_row() override
+    {
+        iterator_side->advance_row();
+        while(!right->empty())
+        {
+            auto found = index.find(iterator_side->access_column(iterator_column));
+            if(found != index.end())
+            {
+                break;
+            }
+            iterator_side->advance_row();
+        }
+    }
+
+    bool empty() override
+    {
+        return index.size() == 0 || iterator_side->empty();
+    }
+
+    unsigned int width() override
+    {
+        return iterator_side->width() + indexed_side->width();
+    }
+
+    // Speculative
+    unsigned int height() override
+    {
+        return indexed_side->height() > iterator_side->height() ?
+                    iterator_side->height() : indexed_side->height();
+    }
+};
+
+struct outer_join : indexed_join
+{
+    outer_join(std::shared_ptr<table_iterator> left_,
+               std::shared_ptr<table_iterator> right_,
+               on_t on) : indexed_join(left_, right_, on, HEIGHT) { };
+
+    cell access_column(unsigned int i) override
+    {
+        if(i >= left->width())
+        {
+            if(side == LEFT)
+            {
+                return right->access_column(i - left->width());
+            }
+            else
+            {
+                auto found = index.find(left->access_column(left_column));
+                if(found != index.end())
+                {
+                    return right->source->cells[i][found->second[0]];
+                }
+                else
+                {
+                    return cell();
+                }
+            }
+        }
+        else
+        {
+            if(side == LEFT)
+            {
+                auto found = index.find(right->access_column(right_column));
+                if(found != index.end())
+                {
+                    return left->source->cells[i][found->second[0]];
+                }
+                else
+                {
+                    return cell();
+                }
+            }
+            else
+            {
+                return left->access_column(i);
+            }
+        }
+    }
+
+    void advance_row() override
+    {
+        while(!iterator_side->empty())
+        {
+            iterator_side->advance_row();
+        }
+    }
+
+    bool empty() override
+    {
+        return index.size() == 0 || iterator_side->empty();
+    }
+    unsigned int width() override
+    {
+        return iterator_side->width() + indexed_side->width();
+    }
+
+    // Speculative
+    unsigned int height() override
+    {
+        return iterator_side->height() + indexed_side->height();
+    }
+};
+
+struct left_outer_join : indexed_join
+{
+    left_outer_join(std::shared_ptr<table_iterator> left_,
+                    std::shared_ptr<table_iterator> right_,
+                    on_t on) : indexed_join(left_, right_, on, RIGHT) {};
+
+    cell access_column(unsigned int i) override
+    {
+        if(i >= left->width())
+        {
+            auto found = index.find(left->access_column(left_column));
             if(found != index.end())
             {
                 return right->source->cells[i - left->width()][found->second[0]];
@@ -316,51 +335,28 @@ struct left_outer_join : table_view
 
     void advance_row() override
     {
-        left->advance_row();
+        iterator_side->advance_row();
     }
 
     bool empty() override
     {
-        return index.size() == 0 || left->empty();
+        return index.size() == 0 || iterator_side->empty();
     }
     unsigned int width() override
     {
-        return left->width() + right->width();
+        return iterator_side->width() + indexed_side->width();
     }
     unsigned int height() override
     {
-        return left->height();
+        return iterator_side->height();
     }
 };
 
-struct right_outer_join : table_view
+struct right_outer_join : indexed_join
 {
-    std::shared_ptr<table_iterator> left;
-    std::shared_ptr<table_iterator> right;
-    int l_col, r_col;
-    index_t index;
-
     right_outer_join(std::shared_ptr<table_iterator> left_,
                      std::shared_ptr<table_iterator> right_,
-                     on_t on)
-    {
-        left = left_;
-        right = right_;
-
-        for(unsigned int i = 0; i < left->height(); i++)
-        {
-            auto index_cell = left->source->cells[l_col][i];
-            auto found = index.find(index_cell);
-            if(found == index.end())
-            {
-                index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
-            }
-            else
-            {
-                found->second.push_back(i);
-            }
-        }
-    }
+                     on_t on) : indexed_join(left_, right_, on, LEFT) {};
 
     cell access_column(unsigned int i) override
     {
@@ -370,7 +366,7 @@ struct right_outer_join : table_view
         }
         else
         {
-            auto found = index.find(right->access_column(r_col));
+            auto found = index.find(right->access_column(right_column));
             if(found != index.end())
             {
                 return left->source->cells[i][found->second[0]];
@@ -384,20 +380,20 @@ struct right_outer_join : table_view
 
     void advance_row() override
     {
-        right->advance_row();
+        iterator_side->advance_row();
     }
 
     bool empty() override
     {
-        return index.size() == 0 || right->empty();
+        return index.size() == 0 || iterator_side->empty();
     }
     unsigned int width() override
     {
-        return left->width() + right->width();
+        return indexed_side->width() + iterator_side->width();
     }
     unsigned int height() override
     {
-        return right->height();
+        return iterator_side->height();
     }
 };
 

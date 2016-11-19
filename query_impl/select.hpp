@@ -40,10 +40,10 @@ struct select_t : query_object, table_view
     {
         while(!from.view->empty())
         {
-            for(auto& column: columns)
+/*            for(auto& column: columns)
             {
                 std::cout << column.call() << " ";
-            }
+            }*/
             std::cout << std::endl;
             advance_row();
         }
