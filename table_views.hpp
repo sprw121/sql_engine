@@ -99,7 +99,6 @@ struct table_iterator : table_view
             std::cerr << "Could not resolve table " << id.id << std::endl;
             throw 0;
         }
-        std::cout << id.id << std::endl;
         name = id.id;
         column_names = table->second->column_names;
         column_types = table->second->column_types;
@@ -201,7 +200,6 @@ struct indexed_join : table_view
         {
             auto index_cell = indexed_side->source->cells[indexed_column][i];
             auto found = index.find(index_cell);
-            std::cout << index_cell << " " << i << std::endl;
             if(found == index.end())
             {
                 index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
@@ -328,7 +326,7 @@ struct inner_join : indexed_join
 struct outer_join : indexed_join
 {
     std::vector<bool> visited;
-    unsigned int next_unvisited;
+    unsigned int next_unvisited = 0;
     outer_join(std::shared_ptr<table_iterator> left_,
                std::shared_ptr<table_iterator> right_,
                on_t& on) : indexed_join(left_, right_, on, HEIGHT)
@@ -392,11 +390,14 @@ struct outer_join : indexed_join
             if(index_cache == empty_cache || ++index_cache == empty_cache)
             {
                 iterator_side->advance_row();
-                auto found = index.find(iterator_side->access_column(iterator_column));
-                if(found != index.end())
+                if(!iterator_side->empty())
                 {
-                    index_cache = found->second.begin();
-                    empty_cache = found->second.end();
+                    auto found = index.find(iterator_side->access_column(iterator_column));
+                    if(found != index.end())
+                    {
+                        index_cache = found->second.begin();
+                        empty_cache = found->second.end();
+                    }
                 }
             }
         }
@@ -457,11 +458,14 @@ struct left_outer_join : indexed_join
         if(index_cache == empty_cache || ++index_cache == empty_cache)
         {
             iterator_side->advance_row();
-            auto found = index.find(left->access_column(left_column));
-            if(found != index.end())
+            if(!iterator_side->empty())
             {
-                index_cache = found->second.begin();
-                empty_cache = found->second.end();
+                auto found = index.find(left->access_column(left_column));
+                if(found != index.end())
+                {
+                    index_cache = found->second.begin();
+                    empty_cache = found->second.end();
+                }
             }
         }
     }
@@ -510,11 +514,14 @@ struct right_outer_join : indexed_join
         if(index_cache == empty_cache || ++index_cache == empty_cache)
         {
             iterator_side->advance_row();
-            auto found = index.find(right->access_column(right_column));
-            if(found != index.end())
+            if(!iterator_side.empty())
             {
-                index_cache = found->second.begin();
-                empty_cache = found->second.end();
+                auto found = index.find(right->access_column(right_column));
+                if(found != index.end())
+                {
+                    index_cache = found->second.begin();
+                    empty_cache = found->second.end();
+                }
             }
         }
     }

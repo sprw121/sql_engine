@@ -6,7 +6,6 @@
 
 expression_t::expression_t(parse_tree_node node, from_t& from)
 {
-    node.print();
     switch(node.token.t)
     {
         case token_t::IDENTITIFER:

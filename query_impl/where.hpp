@@ -6,11 +6,11 @@
 #include "../parser.hpp"
 #include "../table.hpp"
 
-#include "expression.hpp"
+#include "boolean_expression.hpp"
 
 struct where_t
 {
-    std::vector<expression_t> filters;
+    std::vector<boolean_expression_t> filters;
 
     where_t() = default;
     where_t(parse_tree_node node,
@@ -24,8 +24,15 @@ struct where_t
 
         for(auto& arg : node.args)
         {
-            filters.push_back(expression_t(arg, from));
+            filters.push_back(boolean_expression_t(arg, from));
         }
+    }
+
+    bool filter()
+    {
+        for(auto& filter : filters)
+            if(!filter.call()) return false;
+        return true;
     }
 };
 

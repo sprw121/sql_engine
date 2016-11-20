@@ -228,15 +228,16 @@ struct const_expr : expression_impl
 {
     cell value;
 
-    const_expr(parse_tree_node node,
+    const_expr(parse_tree_node& node,
                from_t& from)
     {
+        std::cerr << output_token(node.token) << std::endl;
         if(node.token.t == token_t::INT_LITERAL)
-            value = boost::get<long long int>(node.token.value);
+            value = node.token.value;
         else if(node.token.t == token_t::FLOAT_LITERAL)
-            value = boost::get<double>(node.token.value);
+            value = node.token.value;
         else if(node.token.t == token_t::STR_LITERAL)
-            value = boost::get<std::string>(node.token.value);
+            value = node.token.value;
         else
         {
             std::cerr << "INTERNAL: No literal passed to const_expr: "

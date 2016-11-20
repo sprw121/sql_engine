@@ -7,10 +7,6 @@
 #include "table.hpp"
 #include "util.hpp"
 
-struct token_t;
-std::string output_token(token_t);
-struct lexer;
-
 struct token_t
 {
     enum token_type
@@ -80,6 +76,8 @@ struct token_t
     token_t(long long int l_)   : t(token_type::INT_LITERAL),   value(l_) {};
     token_t(double d_)          : t(token_type::FLOAT_LITERAL), value(d_) {};
 };
+
+std::string output_token(token_t);
 
 struct lexer
 {

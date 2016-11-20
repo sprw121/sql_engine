@@ -125,6 +125,8 @@ select_t::select_t(parse_tree_node& node,
         }
         column_idx++;
     }
+
+    if(!where.filter()) advance_row();
 }
 
 cell select_t::access_column(unsigned int i)
@@ -135,6 +137,7 @@ cell select_t::access_column(unsigned int i)
 void select_t::advance_row()
 {
     from.view->advance_row();
+    while(!where.filter()) from.view->advance_row();
 }
 
 bool select_t::empty()
@@ -155,7 +158,7 @@ unsigned int select_t::height()
 void select_t::run()
 {
     for(auto& col_name : column_names)
-        std::cout << std::setw(15) << col_name << " | ";
+        std::cout << std::setw(5) << col_name << " | ";
     std::cout << std::endl;
     for(unsigned int i = 0 ; i < width(); i++)
         std::cout << "----------------+-";
@@ -164,7 +167,7 @@ void select_t::run()
     {
         for(auto& column: columns)
         {
-            std::cout << std::setw(15) << column.call() << " | ";
+            std::cout << std::setw(5) << column.call() << " | ";
         }
         std::cout << std::endl;
         advance_row();
