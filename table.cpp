@@ -31,7 +31,7 @@ table::table(table_view& view)
     int curr_row = 0;
     while(!view.empty())
     {
-        for(int i = 0; i < view.width(); i++)
+        for(unsigned int i = 0; i < view.width(); i++)
         {
             cells[i][curr_row] = view.access_column(i);
         }

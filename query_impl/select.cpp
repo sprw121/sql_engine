@@ -157,7 +157,7 @@ void select_t::run()
     for(auto& col_name : column_names)
         std::cout << std::setw(15) << col_name << " | ";
     std::cout << std::endl;
-    for(int i = 0 ; i < width(); i++)
+    for(unsigned int i = 0 ; i < width(); i++)
         std::cout << "----------------+-";
     std::cout << std::endl;
     while(!empty())

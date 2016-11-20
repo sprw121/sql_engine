@@ -168,8 +168,8 @@ struct indexed_join : table_view
 
     indexed_join(std::shared_ptr<table_iterator> left_,
                  std::shared_ptr<table_iterator> right_,
-                 on_t& on, index_side side_) : left(left_), right(right_),
-                                               side(side_), table_view()
+                 on_t& on, index_side side_) : table_view(), left(left_),
+                                               right(right_), side(side_)
     {
         left_column = left->resolve_column(on.left_id.id);
         right_column = right->resolve_column(on.right_id.id);
@@ -362,7 +362,6 @@ struct outer_join : indexed_join
             else
                 if(side == LEFT)
                 {
-                    auto found = index.find(right->access_column(right_column));
                     if(index_cache != empty_cache)
                     {
                         visited[*index_cache] = true;
@@ -540,8 +539,8 @@ struct cross_join : table_view
     std::shared_ptr<table_iterator> right;
 
     cross_join(std::shared_ptr<table_iterator> left_,
-               std::shared_ptr<table_iterator> right_) : left(left_), right(right_),
-                                                         table_view()
+               std::shared_ptr<table_iterator> right_) : table_view(),
+                                                         left(left_), right(right_)
     {
         for(auto& col_name : left->column_names)
         {
