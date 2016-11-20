@@ -175,7 +175,7 @@ token_t lexer::lex_operator(token_t::token_type token)
             idx++;
             return token_t(token_t::NEQUAL);
         }
-        else if(resolve_token_char(query[idx]) == token_t::EQUALS)
+        else if(resolve_token_char(query[idx]) == token_t::EQUAL)
         {
             idx++;
             return token_t(token_t::NEQUAL);
@@ -183,7 +183,7 @@ token_t lexer::lex_operator(token_t::token_type token)
     }
     if(token == token_t::GT) // >=
     {
-        if(resolve_token_char(query[idx]) == token_t::EQUALS)
+        if(resolve_token_char(query[idx]) == token_t::EQUAL)
         {
             idx++;
             return token_t(token_t::GTEQ);
