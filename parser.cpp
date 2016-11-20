@@ -1,7 +1,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 
-//#define DEBUG
+#define DEBUG
 
 int precedence(token_t t)
 {
@@ -23,18 +23,18 @@ int precedence(token_t t)
             return 5;
         case token_t::ON:
             return 6;
-        case token_t::PLUS:       case token_t::MINUS:
+        case token_t::OR:
             return 7;
-        case token_t::STAR:       case token_t::DIVIDE:    case token_t::MOD:
+        case token_t::AND:
             return 8;
-        case token_t::CARAT:
-            return 9;
         case token_t::EQUAL:      case token_t::NEQUAL:    case token_t::LT:
         case token_t::LTEQ:       case token_t::GT:        case token_t::GTEQ:
+            return 9;
+        case token_t::PLUS:       case token_t::MINUS:
             return 10;
-        case token_t::AND:
+        case token_t::STAR:       case token_t::DIVIDE:    case token_t::MOD:
             return 11;
-        case token_t::OR:
+        case token_t::CARAT:
             return 12;
         case token_t::NEGATE:    case token_t::BANG:
             return 13;

@@ -514,7 +514,7 @@ struct right_outer_join : indexed_join
         if(index_cache == empty_cache || ++index_cache == empty_cache)
         {
             iterator_side->advance_row();
-            if(!iterator_side.empty())
+            if(!iterator_side->empty())
             {
                 auto found = index.find(right->access_column(right_column));
                 if(found != index.end())

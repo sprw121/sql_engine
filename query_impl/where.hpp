@@ -24,7 +24,7 @@ struct where_t
 
         for(auto& arg : node.args)
         {
-            filters.push_back(boolean_expression_t(arg, from));
+            filters.emplace_back(boolean_expression_t(arg, from));
         }
     }
 

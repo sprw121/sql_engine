@@ -232,18 +232,18 @@ struct const_expr : expression_impl
                from_t& from)
     {
         std::cerr << output_token(node.token) << std::endl;
-        if(node.token.t == token_t::INT_LITERAL)
-            value = node.token.value;
-        else if(node.token.t == token_t::FLOAT_LITERAL)
-            value = node.token.value;
-        else if(node.token.t == token_t::STR_LITERAL)
-            value = node.token.value;
-        else
+        std::cerr << node.token.value.which() << " " << node.token.value << std::endl;
+        if(node.token.t != token_t::INT_LITERAL &&
+           node.token.t != token_t::FLOAT_LITERAL &&
+           node.token.t != token_t::STR_LITERAL)
         {
             std::cerr << "INTERNAL: No literal passed to const_expr: "
                       << output_token(node.token) << std::endl;
             throw 0;
         }
+
+        value = node.token.value;
+        std::cerr << value.which() << " " << value << std::endl;
     }
 
     cell call() override

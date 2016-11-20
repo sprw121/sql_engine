@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 
@@ -167,12 +168,25 @@ token_t lexer::lex_operator(token_t::token_type token)
     idx++;
     if(idx == query.size()) return token_t(token);
 
-    if(token == token_t::LT) // "<>"
+    if(token == token_t::LT) // <>, <=
     {
         if(resolve_token_char(query[idx]) == token_t::GT)
         {
             idx++;
             return token_t(token_t::NEQUAL);
+        }
+        else if(resolve_token_char(query[idx]) == token_t::EQUALS)
+        {
+            idx++;
+            return token_t(token_t::NEQUAL);
+        }
+    }
+    if(token == token_t::GT) // >=
+    {
+        if(resolve_token_char(query[idx]) == token_t::EQUALS)
+        {
+            idx++;
+            return token_t(token_t::GTEQ);
         }
     }
     else if(token == token_t::BANG)
@@ -221,7 +235,11 @@ token_t lexer::lex_word()
 
     std::string token_string(&query[start], idx - start);
     token_t::token_type t = resolve_token_string(token_string);
-    return token_t(t, std::move(token_string));
+    if(t == token_t::INT_LITERAL)
+        return token_t(atoll(token_string.c_str()));
+    if(t == token_t::FLOAT_LITERAL)
+        return token_t(atof(token_string.c_str()));
+    return token_t(t, token_string);
 }
 
 bool lexer::next_token(token_t& token)

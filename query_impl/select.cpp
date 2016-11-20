@@ -68,6 +68,7 @@ select_t::select_t(parse_tree_node& node,
                 throw 0;
             }
         }
+        i++;
     }
     end_loop:
     if(i == node.args.size())
@@ -95,7 +96,7 @@ select_t::select_t(parse_tree_node& node,
     while(!expression_stack.empty())
     {
         parse_tree_node arg = pop_top(expression_stack);
-        std::cout << arg.token.value << std::endl;
+        std::cerr << output_token(arg.token) << std::endl;
         if(arg.token.t == token_t::AS)
         {
             as_t<expression_t> named_expression(arg, from);
@@ -137,7 +138,7 @@ cell select_t::access_column(unsigned int i)
 void select_t::advance_row()
 {
     from.view->advance_row();
-    while(!where.filter()) from.view->advance_row();
+    while(!from.view->empty() && !where.filter()) from.view->advance_row();
 }
 
 bool select_t::empty()
