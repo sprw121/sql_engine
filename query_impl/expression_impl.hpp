@@ -206,8 +206,14 @@ struct column_accessor : expression_impl
     column_accessor(parse_tree_node node,
                     from_t& from)
     {
-        node.print();
-        auto column_name = boost::get<std::string>(node.token.u);
+        auto column_name = boost::get<std::string>(node.token.value);
+        column = from.view->resolve_column(column_name);
+        view = from.view;
+    }
+
+    column_accessor(std::string column_name,
+                    from_t& from)
+    {
         column = from.view->resolve_column(column_name);
         view = from.view;
     }
@@ -215,6 +221,33 @@ struct column_accessor : expression_impl
     cell call() override
     {
         return view->access_column(column);
+    }
+};
+
+struct const_expr : expression_impl
+{
+    cell value;
+
+    const_expr(parse_tree_node node,
+               from_t& from)
+    {
+        if(node.token.t == token_t::INT_LITERAL)
+            value = boost::get<long long int>(node.token.value);
+        else if(node.token.t == token_t::FLOAT_LITERAL)
+            value = boost::get<double>(node.token.value);
+        else if(node.token.t == token_t::STR_LITERAL)
+            value = boost::get<std::string>(node.token.value);
+        else
+        {
+            std::cerr << "INTERNAL: No literal passed to const_expr: "
+                      << output_token(node.token) << std::endl;
+            throw 0;
+        }
+    }
+
+    cell call() override
+    {
+        return value;
     }
 };
 

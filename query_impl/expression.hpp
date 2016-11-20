@@ -22,6 +22,7 @@ struct expression_t
     expression_t(expression_t&& e) : impl(std::move(e.impl)) { }
     expression_t& operator=(expression_t&& e) { impl = std::move(e.impl); return *this; }
     expression_t(parse_tree_node, from_t&);
+    expression_t(std::string column_name, from_t& from);
 
     cell call();
 };

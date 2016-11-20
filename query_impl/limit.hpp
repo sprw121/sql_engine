@@ -10,7 +10,7 @@
 
 struct limit_t
 {
-    long limit;
+    long long int limit;
 
     limit_t() : limit(LONG_MAX) {};
     limit_t(parse_tree_node node)
@@ -27,7 +27,7 @@ struct limit_t
             throw 0;
         }
 
-        limit = boost::get<long>(node.args[0].token.u);
+        limit = boost::get<long long int>(node.args[0].token.value);
     }
 };
 

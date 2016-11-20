@@ -4,6 +4,7 @@
 #include <string>
 
 #include "boost/variant.hpp"
+#include "table.hpp"
 #include "util.hpp"
 
 struct token_t;
@@ -69,15 +70,15 @@ struct token_t
     };
 
     token_type  t;
-    boost::variant<double, long, std::string> u;
+    cell value;
 
-    token_t()                   : t(token_type::INVALID),       u() {};
-    token_t(token_type t_)      : t(t_),                        u() {};
+    token_t()                   : t(token_type::INVALID),       value() {};
+    token_t(token_type t_)      : t(t_),                        value() {};
     token_t(token_type t_,
-            std::string name_)  : t(t_),                        u(name_) {};
+            std::string name_)  : t(t_),                        value(name_) {};
 
-    token_t(long l_)            : t(token_type::INT_LITERAL),   u(l_) {};
-    token_t(double d_)          : t(token_type::FLOAT_LITERAL), u(d_) {};
+    token_t(long long int l_)   : t(token_type::INT_LITERAL),   value(l_) {};
+    token_t(double d_)          : t(token_type::FLOAT_LITERAL), value(d_) {};
 };
 
 struct lexer

@@ -1,5 +1,10 @@
+#include <iomanip>
+#include <iostream>
 #include <sstream>
+#include <stack>
+
 #include "select.hpp"
+#include "../util.hpp"
 
 select_t::select_t(parse_tree_node& node,
        table_map_t& tables)
@@ -75,14 +80,22 @@ select_t::select_t(parse_tree_node& node,
         throw 0;
     }
 
-    if(where_node.a_type != parse_tree_node::EMPTY)
+    if(seen_where)
     {
         where = where_t(where_node, from);
     }
 
-    for(; i < node.args.size(); i++)
+    std::stack<parse_tree_node> expression_stack;
+    while(i < node.args.size())
     {
-        parse_tree_node arg = node.args[i];
+        expression_stack.push(node.args[i++]);
+    }
+
+    int column_idx = 0;
+    while(!expression_stack.empty())
+    {
+        parse_tree_node arg = pop_top(expression_stack);
+        std::cout << arg.token.value << std::endl;
         if(arg.token.t == token_t::AS)
         {
             as_t<expression_t> named_expression(arg, from);
@@ -91,21 +104,27 @@ select_t::select_t(parse_tree_node& node,
         }
         else if (arg.token.t == token_t::IDENTITIFER)
         {
-            column_names.push_back(boost::get<std::string>(arg.token.u));
+            column_names.push_back(boost::get<std::string>(arg.token.value));
             columns.push_back(expression_t(arg, from));
         }
         else if (arg.token.t == token_t::SELECT_ALL)
         {
+            for(auto& column_name : from.view->column_names)
+            {
+                column_names.push_back(column_name);
+                columns.push_back(expression_t(column_name, from));
+            }
+            column_idx += column_names.size();
         }
         else
         {
             std::stringstream stream;
-            stream << "col_" << i;
+            stream << "col_" << column_idx;
             columns.push_back(expression_t(arg, from));
             column_names.push_back(stream.str());
         }
+        column_idx++;
     }
-
 }
 
 cell select_t::access_column(unsigned int i)
@@ -135,17 +154,17 @@ unsigned int select_t::height()
 
 void select_t::run()
 {
-    for(auto& col_name : from.view->column_names)
-        std::cout << col_name << std::endl;
-    while(!from.view->empty())
+    for(auto& col_name : column_names)
+        std::cout << std::setw(15) << col_name << " | ";
+    std::cout << std::endl;
+    for(int i = 0 ; i < width(); i++)
+        std::cout << "----------------+-";
+    std::cout << std::endl;
+    while(!empty())
     {
-/*            for(auto& column: columns)
+        for(auto& column: columns)
         {
-            std::cout << column.call() << " ";
-        }*/
-        for(int i = 0; i < from.view->width(); i++)
-        {
-            std::cerr << from.view->access_column(i) << " ";
+            std::cout << std::setw(15) << column.call() << " | ";
         }
         std::cout << std::endl;
         advance_row();

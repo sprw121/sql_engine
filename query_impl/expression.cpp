@@ -18,6 +18,7 @@ expression_t::expression_t(parse_tree_node node, from_t& from)
         case token_t::FLOAT_LITERAL:
         case token_t::STR_LITERAL:
         {
+            impl = std::unique_ptr<expression_impl>(new const_expr(node,from));
             break;
         }
         case token_t::PLUS:
@@ -46,6 +47,12 @@ expression_t::expression_t(parse_tree_node node, from_t& from)
             break;
         }
     }
+}
+
+// Overload to allow pushing of columns from non
+expression_t::expression_t(std::string column_name, from_t& from)
+{
+    impl = std::unique_ptr<expression_impl>(new column_accessor(column_name, from));
 }
 
 cell expression_t::call()

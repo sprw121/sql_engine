@@ -22,7 +22,7 @@ struct as_t
             std::cerr << "INTERNAL: Expected 2 args to as clause." << std::endl;
         }
 
-        name = boost::get<std::string>(node.args[1].token.u);
+        name = boost::get<std::string>(node.args[1].token.value);
         value = T(node.args[0]);
     }
 
@@ -34,7 +34,7 @@ struct as_t
             std::cerr << "INTERNAL: Expected 2 args to as clause." << std::endl;
         }
 
-        name = boost::get<std::string>(node.args[1].token.u);
+        name = boost::get<std::string>(node.args[1].token.value);
         value = T(node.args[0], tables);
     }
 
@@ -46,7 +46,7 @@ struct as_t
             std::cerr << "INTERNAL: Expected 2 args to as clause." << std::endl;
         }
 
-        name = boost::get<std::string>(node.args[1].token.u);
+        name = boost::get<std::string>(node.args[1].token.value);
         value = T(node.args[0], from);
     }
 };

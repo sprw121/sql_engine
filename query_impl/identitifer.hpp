@@ -17,7 +17,7 @@ struct identitifer_t
             std::cerr << "INTERNAL: identitifer argument expected." << std::endl;
         }
 
-        id = boost::get<std::string>(node.token.u);
+        id = boost::get<std::string>(node.token.value);
     }
 };
 

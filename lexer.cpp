@@ -8,58 +8,58 @@ std::string output_token(token_t t)
     std::stringstream stream;
     switch(t.t)
     {
-        case token_t::PLUS:          stream << "PLUS"; break;
-        case token_t::MINUS:         stream << "MINUS"; break;
-        case token_t::STAR:          stream << "STAR"; break;
-        case token_t::DIVIDE:        stream << "DIVIDE"; break;
-        case token_t::MOD:           stream << "MOD"; break;
-        case token_t::CARAT:         stream << "CARAT"; break;
-        case token_t::PAREN_OPEN:    stream << "PAREN_OPEN"; break;
-        case token_t::PAREN_CLOSE:   stream << "PAREN_CLOSE"; break;
-        case token_t::BANG:          stream << "BANG"; break;
-        case token_t::EQUAL:         stream << "EQUAL"; break;
-        case token_t::NEQUAL:        stream << "NEQUAL"; break;
-        case token_t::LT:            stream << "LT"; break;
-        case token_t::LTEQ:          stream << "LTEQ"; break;
-        case token_t::GT:            stream << "GT"; break;
-        case token_t::GTEQ:          stream << "GTEQ";
-        case token_t::COMMA:         stream << "COMMA"; break;
-        case token_t::END:           stream << "END"; break;
+        case token_t::PLUS:          stream << "PLUS";          break;
+        case token_t::MINUS:         stream << "MINUS";         break;
+        case token_t::STAR:          stream << "STAR";          break;
+        case token_t::DIVIDE:        stream << "DIVIDE";        break;
+        case token_t::MOD:           stream << "MOD";           break;
+        case token_t::CARAT:         stream << "CARAT";         break;
+        case token_t::PAREN_OPEN:    stream << "PAREN_OPEN";    break;
+        case token_t::PAREN_CLOSE:   stream << "PAREN_CLOSE";   break;
+        case token_t::BANG:          stream << "BANG";          break;
+        case token_t::EQUAL:         stream << "EQUAL";         break;
+        case token_t::NEQUAL:        stream << "NEQUAL";        break;
+        case token_t::LT:            stream << "LT";            break;
+        case token_t::LTEQ:          stream << "LTEQ";          break;
+        case token_t::GT:            stream << "GT";            break;
+        case token_t::GTEQ:          stream << "GTEQ";          break;
+        case token_t::COMMA:         stream << "COMMA";         break;
+        case token_t::END:           stream << "END";           break;
 
-        case token_t::STR_LITERAL:   stream << "STRING " << t.u; break;
-        case token_t::INT_LITERAL:   stream << "INT " << t.u; break;
-        case token_t::FLOAT_LITERAL: stream << "FLOAT " << t.u; break;
-        case token_t::IDENTITIFER:   stream << "IDENTITIFER " <<t.u; break;
+        case token_t::STR_LITERAL:   stream << "STRING "      << t.value; break;
+        case token_t::INT_LITERAL:   stream << "INT "         << t.value; break;
+        case token_t::FLOAT_LITERAL: stream << "FLOAT "       << t.value; break;
+        case token_t::IDENTITIFER:   stream << "IDENTITIFER " << t.value; break;
 
-        case token_t::SELECT:        stream << "SELECT"; break;
-        case token_t::AS:            stream << "AS"; break;
-        case token_t::FROM:          stream << "FROM"; break;
-        case token_t::WHERE:         stream << "WHERE"; break;
-        case token_t::LIMIT:         stream << "LIMIT"; break;
-        case token_t::OFFSET:        stream << "OFFSET"; break;
+        case token_t::SELECT:        stream << "SELECT";    break;
+        case token_t::AS:            stream << "AS";        break;
+        case token_t::FROM:          stream << "FROM";      break;
+        case token_t::WHERE:         stream << "WHERE";     break;
+        case token_t::LIMIT:         stream << "LIMIT";     break;
+        case token_t::OFFSET:        stream << "OFFSET";    break;
 
-        case token_t::SHOW:          stream << "SHOW"; break;
-        case token_t::TABLES:        stream << "TABLES"; break;
+        case token_t::SHOW:          stream << "SHOW";      break;
+        case token_t::TABLES:        stream << "TABLES";    break;
 
-        case token_t::DESCRIBE:      stream << "DESCRIBE"; break;
-        case token_t::LOAD:          stream << "LOAD"; break;
-        case token_t::EXIT:          stream << "EXIT"; break;
+        case token_t::DESCRIBE:      stream << "DESCRIBE";  break;
+        case token_t::LOAD:          stream << "LOAD";      break;
+        case token_t::EXIT:          stream << "EXIT";      break;
 
-        case token_t::LEFT_JOIN:     stream << "LEFT"; break;
-        case token_t::RIGHT_JOIN:    stream << "RIGHT"; break;
-        case token_t::OUTER_JOIN:    stream << "OUTER"; break;
-        case token_t::INNER_JOIN:    stream << "INNER"; break;
-        case token_t::CROSS_JOIN:    stream << "CROSS"; break;
-        case token_t::ON:            stream << "ON"; break;
+        case token_t::LEFT_JOIN:     stream << "LEFT";      break;
+        case token_t::RIGHT_JOIN:    stream << "RIGHT";     break;
+        case token_t::OUTER_JOIN:    stream << "OUTER";     break;
+        case token_t::INNER_JOIN:    stream << "INNER";     break;
+        case token_t::CROSS_JOIN:    stream << "CROSS";     break;
+        case token_t::ON:            stream << "ON";        break;
 
-        case token_t::AND:           stream << "AND"; break;
-        case token_t::OR:            stream << "OR"; break;
+        case token_t::AND:           stream << "AND";       break;
+        case token_t::OR:            stream << "OR";        break;
 
-        case token_t::FUNCTION:      stream << "FUNCTION"; break;
+        case token_t::FUNCTION:      stream << "FUNCTION";  break;
 
-        case token_t::SELECT_ALL:    stream << "SELECT_ALL"; break;
-        case token_t::NEGATE:        stream << "NEGATE"; break;
-        case token_t::INVALID:       stream << "INVALID"; break;
+        case token_t::SELECT_ALL:    stream << "SELECT_ALL";    break;
+        case token_t::NEGATE:        stream << "NEGATE";        break;
+        case token_t::INVALID:       stream << "INVALID";       break;
     }
 
     return stream.str();

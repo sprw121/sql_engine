@@ -161,6 +161,11 @@ struct indexed_join : table_view
     index_t index;
     index_side side;
 
+    // Dummy to initialize iterator variables
+    std::vector<unsigned int> empty_vector;
+    std::vector<unsigned int>::iterator index_cache;
+    std::vector<unsigned int>::iterator empty_cache;
+
     indexed_join(std::shared_ptr<table_iterator> left_,
                  std::shared_ptr<table_iterator> right_,
                  on_t& on, index_side side_) : left(left_), right(right_),
@@ -230,6 +235,18 @@ struct indexed_join : table_view
                 column_names.push_back(col_name);
 
         }
+
+        auto found = index.find(iterator_side->access_column(iterator_column));
+        if(found != index.end())
+        {
+            index_cache = found->second.begin();
+            empty_cache = found->second.end();
+        }
+        else
+        {
+            index_cache = empty_vector.end();
+            empty_cache = empty_vector.end();
+        }
     }
 
     std::shared_ptr<table_iterator> load()
@@ -249,6 +266,8 @@ struct inner_join : indexed_join
             auto found = index.find(iterator_side->access_column(iterator_column));
             if(found != index.end())
             {
+                index_cache = found->second.begin();
+                empty_cache   = found->second.end();
                 break;
             }
             iterator_side->advance_row();
@@ -258,42 +277,33 @@ struct inner_join : indexed_join
     cell access_column(unsigned int i) override
     {
         if(i >= left->width())
-        {
             if(side == LEFT)
-            {
                 return right->access_column(i - left->width());
-            }
             else
-            {
-                auto found = index.find(left->access_column(left_column));
-                return right->source->cells[i - left->width()][found->second[0]];
-            }
-        }
+                return right->source->cells[i - left->width()][*index_cache];
         else
-        {
             if(side == LEFT)
-            {
-                auto found = index.find(right->access_column(right_column));
-                return left->source->cells[i][found->second[0]];
-            }
+                return left->source->cells[i][*index_cache];
             else
-            {
                 return left->access_column(i);
-            }
-        }
     }
 
     void advance_row() override
     {
-        iterator_side->advance_row();
-        while(!iterator_side->empty())
+        if(++index_cache == empty_cache)
         {
-            auto found = index.find(iterator_side->access_column(iterator_column));
-            if(found != index.end())
-            {
-                break;
-            }
             iterator_side->advance_row();
+            while(!iterator_side->empty())
+            {
+                auto found = index.find(iterator_side->access_column(iterator_column));
+                if(found != index.end())
+                {
+                    index_cache = found->second.begin();
+                    empty_cache   = found->second.end();
+                    break;
+                }
+                iterator_side->advance_row();
+            }
         }
     }
 
@@ -331,86 +341,65 @@ struct outer_join : indexed_join
         {
             visited = std::vector<bool>(right->height());
         }
-
     }
 
     cell access_column(unsigned int i) override
     {
         if(!iterator_side->empty())
-        {
             if(i >= left->width())
-            {
                 if(side == LEFT)
-                {
                     return right->access_column(i - left->width());
-                }
                 else
                 {
-                    auto found = index.find(left->access_column(left_column));
-                    if(found != index.end())
+                    if(index_cache != empty_cache)
                     {
-                        visited[found->second[0]] = true;
-                        return right->source->cells[i - left->width()][found->second[0]];
+                        visited[*index_cache] = true;
+                        return right->source->cells[i - left->width()][*index_cache];
                     }
                     else
-                    {
                         return cell();
-                    }
                 }
-            }
             else
-            {
                 if(side == LEFT)
                 {
                     auto found = index.find(right->access_column(right_column));
-                    if(found != index.end())
+                    if(index_cache != empty_cache)
                     {
-                        visited[found->second[0]] = true;
-                        return left->source->cells[i][found->second[0]];
+                        visited[*index_cache] = true;
+                        return left->source->cells[i][*index_cache];
                     }
                     else
-                    {
                         return cell();
-                    }
                 }
                 else
-                {
                     return left->access_column(i);
-                }
-            }
-        }
         else
-        {
             if(i >= left->width())
-            {
                 if(side == LEFT)
-                {
                     return cell();
-                }
                 else
-                {
                     return right->source->cells[i - left->width()][next_unvisited];
-                }
-            }
             else
-            {
                 if(side == LEFT)
-                {
                     return left->source->cells[i][next_unvisited];
-                }
                 else
-                {
                     return cell();
-                }
-            }
-        }
     }
 
     void advance_row() override
     {
         if(!iterator_side->empty())
         {
-            iterator_side->advance_row();
+            if(index_cache == empty_cache || ++index_cache == empty_cache)
+            {
+                iterator_side->advance_row();
+                auto found = index.find(iterator_side->access_column(iterator_column));
+                if(found != index.end())
+                {
+                    index_cache = found->second.begin();
+                    empty_cache = found->second.end();
+                }
+            }
         }
         else
         {
@@ -449,10 +438,9 @@ struct left_outer_join : indexed_join
     {
         if(i >= left->width())
         {
-            auto found = index.find(left->access_column(left_column));
-            if(found != index.end())
+            if(index_cache != empty_cache)
             {
-                return right->source->cells[i - left->width()][found->second[0]];
+                return right->source->cells[i - left->width()][*index_cache];
             }
             else
             {
@@ -467,7 +455,16 @@ struct left_outer_join : indexed_join
 
     void advance_row() override
     {
-        iterator_side->advance_row();
+        if(index_cache == empty_cache || ++index_cache == empty_cache)
+        {
+            iterator_side->advance_row();
+            auto found = index.find(left->access_column(left_column));
+            if(found != index.end())
+            {
+                index_cache = found->second.begin();
+                empty_cache = found->second.end();
+            }
+        }
     }
 
     bool empty() override
@@ -498,30 +495,29 @@ struct right_outer_join : indexed_join
         }
         else
         {
-            auto found = index.find(right->access_column(right_column));
-            if(found != index.end())
+            if(index_cache == empty_cache)
             {
-                return left->source->cells[i][found->second[0]];
+                return cell();
             }
             else
             {
-                return cell();
+                return left->source->cells[i][*index_cache];
             }
         }
     }
 
     void advance_row() override
     {
-        auto found = index.find(right->access_column(right_column));
-        if(found != index.end())
+        if(index_cache == empty_cache || ++index_cache == empty_cache)
         {
-            std::cout << found->second[0];
+            iterator_side->advance_row();
+            auto found = index.find(right->access_column(right_column));
+            if(found != index.end())
+            {
+                index_cache = found->second.begin();
+                empty_cache = found->second.end();
+            }
         }
-        else
-        {
-            std::cout << -1;
-        }
-        iterator_side->advance_row();
     }
 
     bool empty() override

@@ -8,7 +8,7 @@
 
 struct offset_t
 {
-    long offset;
+    long long int offset;
 
     offset_t() = default;
     offset_t(parse_tree_node node)
@@ -25,7 +25,7 @@ struct offset_t
             throw 0;
         }
 
-        offset = boost::get<long>(node.args[0].token.u);
+        offset = boost::get<long long int>(node.args[0].token.value);
     }
 };
 
