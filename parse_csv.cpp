@@ -72,36 +72,37 @@ std::vector<std::vector<char*>> parse_csv(std::string& file_name)
     return ret;
 }
 
-type infer_type(const char* str)
+cell_type infer_type(const char* str)
 {
-    if(is_integer(str)) return type::INT;
-    if(is_float(str)) return type::FLOAT;
-    return type::STRING;
+    if(is_integer(str))
+        return cell_type::INT;
+    else if(is_float(str))
+        return cell_type::FLOAT;
+
+    throw 0;
 }
 
-std::vector<type> infer_column_types(std::vector<std::vector<char*>> ir)
+std::vector<cell_type> infer_column_types(std::vector<std::vector<char*>> ir)
 {
-    std::vector<type> ret(ir[0].size(), type::INT);
+    std::vector<cell_type> ret(ir[0].size(), cell_type::INT);
 
     for(unsigned int i = 1; i < ir.size(); i++)
     {
         for(unsigned int j = 0; j < ir[i].size(); j++)
         {
-            type t = infer_type(ir[i][j]);
             // Int columns containing a float get promoted to float column
-            // Int or float columns containg a string get promoted to string
-            switch(t)
+            try
             {
-                case type::STRING:
-                    ret[j] = type::STRING;
-                    break;
-                case type::FLOAT:
-                    if(ret[j] == type::INT)
-                    {
-                        ret[j] = type::FLOAT;
-                    }
-                    break;
-                default: break;
+                if(infer_type(ir[i][j]) == cell_type::FLOAT)
+                {
+                    ret[j] = cell_type::FLOAT;
+                }
+            }
+            catch(int)
+            {
+                std::cerr << "Unsupported cell type in row "
+                          << i << " column " << j << std::endl;
+                throw;
             }
         }
     }
@@ -112,7 +113,7 @@ std::vector<type> infer_column_types(std::vector<std::vector<char*>> ir)
 // Converts our c string csv IR into a column-wise representation of boost::variants.
 // Vector of columns.
 std::vector<std::vector<cell>> load_from_ir(std::vector<std::vector<char*>> ir,
-        std::vector<type> column_types)
+                                            std::vector<cell_type> column_types)
 {
     std::vector<std::vector<cell>> ret(ir[0].size(),
                                        std::vector<cell>(ir.size()-1));
@@ -126,14 +127,12 @@ std::vector<std::vector<cell>> load_from_ir(std::vector<std::vector<char*>> ir,
             // values in maps for joins.
             switch(column_types[j])
             {
-                case type::INT:
+                case cell_type::INT:
                     ret[j][i-1] = cell(atoll(ir[i][j]));
                     break;
-                case type::FLOAT:
+                case cell_type::FLOAT:
                     ret[j][i-1] = cell(atof(ir[i][j]));
                     break;
-                case type::STRING:
-                    ret[j][i-1] = cell(std::string(ir[i][j]));
                     break;
                 default: break;
             }

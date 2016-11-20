@@ -24,7 +24,7 @@ struct table_view
 {
     std::string name;
     std::vector<std::string> column_names;
-    std::vector<type> column_types;
+    std::vector<cell_type> column_types;
 
     table_view() = default;
     virtual cell access_column(unsigned int i) = 0;

@@ -60,14 +60,11 @@ void table::describe()
         std::cout << std::setw(15) << column_names[i] << " | ";
         switch(column_types[i])
         {
-            case type::INT:
-                std::cout << std::setw(15) << std::left << "int64_t" << std::endl;
+            case cell_type::INT:
+                std::cout << std::setw(15) << std::left << "long long int" << std::endl;
                 break;
-            case type::FLOAT:
+            case cell_type::FLOAT:
                 std::cout << std::setw(15) << std::left << "double" << std::endl;
-                break;
-            case type::STRING:
-                std::cout << std::setw(15) << std::left << "string" << std::endl;
                 break;
             default: break;
         }

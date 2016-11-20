@@ -8,14 +8,14 @@ bool is_integer(const char* str)
 {
     char* end;
     strtoll(str, &end, 10);
-    return (*end == 0);
+    return (*end == 0 && end != str);
 }
 
 bool is_float(const char* str)
 {
     char* end;
     strtod(str, &end);
-    return(*end == 0);
+    return(*end == 0 && end != str);
 }
 
 bool is_white(char input)

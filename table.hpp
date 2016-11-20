@@ -12,12 +12,10 @@
 #include "boost/variant/get.hpp"
 
 
-enum type
+enum cell_type
 {
-    NUL,
     INT,
     FLOAT,
-    STRING
 };
 
 typedef boost::variant<double, long long int, std::string> cell;
@@ -26,7 +24,7 @@ struct table_view;
 struct table
 {
     std::vector<std::string>        column_names;
-    std::vector<type>               column_types;
+    std::vector<cell_type>               column_types;
     std::vector<std::vector<cell>>  cells;
     unsigned int                    width, height;
 

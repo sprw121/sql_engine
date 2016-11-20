@@ -8,9 +8,9 @@
 
 std::vector<std::vector<char*>> parse_csv(std::string& file_name);
 
-std::vector<type> infer_column_types(std::vector<std::vector<char*>> ir);
+std::vector<cell_type> infer_column_types(std::vector<std::vector<char*>> ir);
 
 std::vector<std::vector<cell>> load_from_ir(std::vector<std::vector<char*>> ir,
-                                            std::vector<type> column_types);
+                                            std::vector<cell_type> column_types);
 
 #endif

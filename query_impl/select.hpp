@@ -20,8 +20,8 @@ struct select_t;
 struct select_t : query_object, table_view
 {
     std::vector<expression_t> columns;
-    std::vector<std::string> column_names;
-    std::vector<type> column_types;
+    std::vector<std::string>  column_names;
+    std::vector<cell_type>    column_types;
     from_t from;
     where_t where;
     limit_t limit;
