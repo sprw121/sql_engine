@@ -131,12 +131,13 @@ struct aggregate_select : select_t
         {
             for(auto& column : columns)
                 column->accumulate();
+            it.advance_row();
         }
     }
 
     cell access_column(unsigned int i) override
     {
-        return columns[i]->call();
+        return columns[i]->value();
     }
 
     void advance_row() override

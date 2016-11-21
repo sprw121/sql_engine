@@ -116,7 +116,10 @@ static token_t::token_type resolve_token_string(std::string token_string)
     if(token_string == "or" || token_string == "OR")
         return token_t::OR;
 
-    if(token_string == "f" || token_string == "f")
+    if(token_string == "max"     || token_string == "MAX"    ||
+       token_string == "min"     || token_string == "MIN"    ||
+       token_string == "median"  || token_string == "MEDIAN" ||
+       token_string == "average" || token_string == "AVERAGE")
         return token_t::FUNCTION;
 
     return token_t::IDENTITIFER;

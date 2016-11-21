@@ -12,20 +12,13 @@ struct aggregator_t
     cell_type return_type;
     std::unique_ptr<expression_t> expr;
 
-    aggregator_t() = default;
-    aggregator_t(parse_tree_node node, from_t& from)
+    aggregator_t(std::unique_ptr<expression_t>& expr_) : expr(std::move(expr_))
     {
-        if(node.args.size() != 1)
-        {
-            std::cerr << "Only univariate aggregators supported." << std::endl;
-            throw 0;
-        }
-        expr = expression_factory(node.args[0], from);
         return_type = expr->return_type;
     }
 
     virtual void accumulate() = 0;
-    virtual cell call()       = 0;
+    virtual cell value()      = 0;
 };
 
 std::unique_ptr<aggregator_t> aggregator_factory(parse_tree_node, from_t&);

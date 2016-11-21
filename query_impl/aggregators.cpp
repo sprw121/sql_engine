@@ -12,8 +12,7 @@ struct max_t : aggregator_t
     T max;
     bool seen;
 
-    max_t(parse_tree_node& node,
-          from_t from) : aggregator_t(node, from)
+    max_t(std::unique_ptr<expression_t>& expr_) : aggregator_t(expr_)
     {
         seen = false;
         max  = std::numeric_limits<T>::lowest();
@@ -43,11 +42,10 @@ struct min_t : aggregator_t
     T min;
     bool seen;
 
-    min_t(parse_tree_node& node,
-          from_t from) : aggregator_t(node, from)
+    min_t(std::unique_ptr<expression_t>& expr_) : aggregator_t(expr_)
     {
         seen = false;
-        min = std::numeric_limits<T>::max();
+        min  = std::numeric_limits<T>::max();
     }
 
     void accumulate()
@@ -64,7 +62,6 @@ struct min_t : aggregator_t
             std::cerr << "Attempt to take min from empty tables." << std::endl;
             throw 0;
         }
-        std::cerr << "Taking min from empty tables." << std::endl;
         return *(cell*)&min;
     }
 };
@@ -75,17 +72,73 @@ struct median_t : aggregator_t
     std::vector<T> vals;
     unsigned long long int seen;
 
-    median_t(parse_tree_node& node,
-             from_t from) : aggregator_t(node, from)
+    median_t(std::unique_ptr<expression_t>& expr_,
+             from_t& from) : aggregator_t(expr_)
     {
-        vals.resize(from.view->height());
         seen = 0;
+        vals.reserve(from.view->height());
     }
 
     void accumulate()
     {
         auto val = expr->call();
         vals[seen++] = *(T*)&val;
+    }
+
+    unsigned int partition(unsigned int left, unsigned int right)
+    {
+        auto pivot     = vals[right - 1];
+        auto pivot_idx = right - 1;
+
+        while(left < right)
+        {
+            if(vals[left] >= pivot && vals[right] < pivot)
+            {
+                std::swap(vals[left], vals[right]);
+                left++;
+                right--;
+            }
+            if(vals[right] >= pivot)
+                right--;
+            if(vals[left] < pivot)
+                left++;
+        }
+
+        std::swap(vals[left], vals[pivot_idx]);
+        return left;
+    }
+
+    T quick_select_impl(unsigned int left, unsigned int right, unsigned int kth)
+    {
+        if(right == left + 1)
+        {
+            return vals[left];
+        }
+
+        auto pivot_idx = this->partition(left, right);
+        if(pivot_idx = kth)
+        {
+            return vals[pivot_idx];
+        }
+        else if(pivot_idx > kth)
+            return this->quick_select_impl(left, pivot_idx, kth);
+        else if(pivot_idx < kth)
+            return this->quick_select_impl(pivot_idx + 1, right, kth);
+    }
+
+    T quick_select()
+    {
+        if(seen % 2)
+        {
+            auto upper_median = this->quick_select_impl(0, seen, seen/2);
+            T    lower_median = std::numeric_limits<T>::lowest();
+            for(int i = 0; i < seen/2; i++)
+                lower_median = vals[i] > lower_median ? vals[i] : lower_median;
+
+            return (double)upper_median / 2  + (double)lower_median/2;
+        }
+        else
+            return this->quick_select_impl(0, seen, seen/2);
     }
 
     cell value()
@@ -95,8 +148,8 @@ struct median_t : aggregator_t
             std::cerr << "Attempt to take median from empty tables." << std::endl;
             throw 0;
         }
-
-        return cell();
+        auto val = this->quick_select();
+        return *(cell*)&val;
     }
 };
 
@@ -106,13 +159,18 @@ struct average_t : aggregator_t
     T sum;
     unsigned long long int seen;
 
-    average_t(parse_tree_node& node,
-              from_t from) : aggregator_t(node, from) {};
+    average_t(std::unique_ptr<expression_t>& expr_) : aggregator_t(expr_)
+    {
+        sum = 0;
+        seen = 0;
+        return_type = FLOAT;
+    }
 
     void accumulate()
     {
         auto val = expr->call();
         sum += *(T*)&val;
+        seen++;
     }
 
     cell value()
@@ -123,35 +181,64 @@ struct average_t : aggregator_t
             throw 0;
         }
 
-        auto av = sum / seen;
+        auto av = ((double)sum) / seen;
         return *(cell*)&av;
     }
 };
 
 std::unique_ptr<aggregator_t> aggregator_factory(parse_tree_node node, from_t& from)
 {
-/*    if(node.token.raw_rep == "max" ||
+    if(node.args.size() != 1)
+    {
+        std::cerr << "Only univariate aggregators supported." << std::endl;
+        throw 0;
+    }
+
+    auto expr = expression_factory(node.args[0], from);
+    auto return_type = expr->return_type;
+
+    if(node.token.raw_rep == "max" ||
        node.token.raw_rep == "MAX")
     {
-        impl = std::unique_ptr<aggregator_impl>(new max_t(node, from));
+        if(return_type == cell_type::INT)
+            return std::unique_ptr<aggregator_t>(
+                new max_t<long long int>(expr));
+        else
+            return std::unique_ptr<aggregator_t>(
+                new max_t<double>(expr));
     }
     else if(node.token.raw_rep == "min" ||
             node.token.raw_rep == "MIN")
     {
-        impl = std::unique_ptr<aggregator_impl>(new max_t(node, from));
+        if(return_type == cell_type::INT)
+            return std::unique_ptr<aggregator_t>(
+                new min_t<long long int>(expr));
+        else
+            return std::unique_ptr<aggregator_t>(
+                new min_t<double>(expr));
     }
     else if(node.token.raw_rep == "median" ||
             node.token.raw_rep == "MEDIAN")
     {
-        impl = std::unique_ptr<aggregator_impl>(new max_t(node, from));
+        if(return_type == cell_type::INT)
+            return std::unique_ptr<aggregator_t>(
+                new median_t<long long int>(expr, from));
+        else
+            return std::unique_ptr<aggregator_t>(
+                new median_t<double>(expr, from));
     }
     else if(node.token.raw_rep == "average" ||
             node.token.raw_rep == "AVERAGE")
     {
-        impl = std::unique_ptr<aggregator_impl>(new max_t(node, from));
+        if(return_type == cell_type::INT)
+            return std::unique_ptr<aggregator_t>(
+                new average_t<long long int>(expr));
+        else
+            return std::unique_ptr<aggregator_t>(
+                new average_t<double>(expr));
     }
     else
     {
         assert(0);
-    }*/
+    }
 }

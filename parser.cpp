@@ -218,6 +218,7 @@ parse_tree_node parse(std::vector<token_t>& tokens)
                 if(parse_tree.size() && parse_tree.back().token.t == token_t::FUNCTION)
                 {
                     auto tmp = pop_back(operations); //FUNCTION
+                    parse_tree.pop_back();           //FUNCTION
                     parse_tree.push_back(parse_tree_node(tmp, arg_list));
                 }
                 else // Tuples not supported, 1 args == normal expression
