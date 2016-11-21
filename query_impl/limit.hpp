@@ -3,9 +3,6 @@
 
 #include <climits>
 
-#include "boost/variant.hpp"
-#include "boost/variant/get.hpp"
-
 #include "../parser.hpp"
 
 struct limit_t
@@ -27,7 +24,7 @@ struct limit_t
             throw 0;
         }
 
-        limit = boost::get<long long int>(node.args[0].token.value);
+        limit = node.args[0].token.value.i;
     }
 };
 

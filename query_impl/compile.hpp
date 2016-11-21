@@ -70,7 +70,7 @@ std::unique_ptr<query_object> compile_query(parse_tree_node& node,
         }
         case token_t::SELECT:
         {
-            return std::unique_ptr<query_object>(new select_t(node, tables));
+            return select_factory(node, tables);
         }
     }
 

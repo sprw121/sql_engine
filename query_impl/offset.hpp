@@ -1,9 +1,6 @@
 #ifndef _OFFSET_H
 #define _OFFSET_H
 
-#include "boost/variant.hpp"
-#include "boost/variant/get.hpp"
-
 #include "../parser.hpp"
 
 struct offset_t
@@ -25,7 +22,7 @@ struct offset_t
             throw 0;
         }
 
-        offset = boost::get<long long int>(node.args[0].token.value);
+        offset = node.args[0].token.value.i;
     }
 };
 

@@ -3,7 +3,6 @@
 
 #include <string>
 
-#include "boost/variant.hpp"
 #include "table.hpp"
 #include "util.hpp"
 
@@ -67,14 +66,15 @@ struct token_t
 
     token_type  t;
     cell value;
+    std::string raw_rep;
 
-    token_t()                   : t(token_type::INVALID),       value() {};
-    token_t(token_type t_)      : t(t_),                        value() {};
+    token_t()                   : t(token_type::INVALID),       value(),   raw_rep() {};
+    token_t(token_type t_)      : t(t_),                        value(),   raw_rep() {};
     token_t(token_type t_,
-            std::string name_)  : t(t_),                        value(name_) {};
+            std::string name_)  : t(t_),                        value(),   raw_rep(name_) {};
 
-    token_t(long long int l_)   : t(token_type::INT_LITERAL),   value(l_) {};
-    token_t(double d_)          : t(token_type::FLOAT_LITERAL), value(d_) {};
+    token_t(long long int l_)   : t(token_type::INT_LITERAL),   value(l_), raw_rep() {};
+    token_t(double d_)          : t(token_type::FLOAT_LITERAL), value(d_), raw_rep() {};
 };
 
 std::string output_token(token_t);

@@ -7,6 +7,7 @@
 #include "../table.hpp"
 
 #include "from.hpp"
+#include "identitifer.hpp"
 
 template<typename T>
 struct as_t
@@ -22,7 +23,8 @@ struct as_t
             std::cerr << "INTERNAL: Expected 2 args to as clause." << std::endl;
         }
 
-        name = boost::get<std::string>(node.args[1].token.value);
+        identitifer_t identitifer(node.args[1]);
+        name = identitifer.id;
         value = T(node.args[0]);
     }
 
@@ -34,7 +36,8 @@ struct as_t
             std::cerr << "INTERNAL: Expected 2 args to as clause." << std::endl;
         }
 
-        name = boost::get<std::string>(node.args[1].token.value);
+        identitifer_t identitifer(node.args[1]);
+        name = identitifer.id;
         value = T(node.args[0], tables);
     }
 
@@ -46,7 +49,8 @@ struct as_t
             std::cerr << "INTERNAL: Expected 2 args to as clause." << std::endl;
         }
 
-        name = boost::get<std::string>(node.args[1].token.value);
+        identitifer_t identitifer(node.args[1]);
+        name = identitifer.id;
         value = T(node.args[0], from);
     }
 };

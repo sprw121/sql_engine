@@ -8,17 +8,25 @@
 #include <unordered_map>
 #include <vector>
 
-#include "boost/variant.hpp"
-#include "boost/variant/get.hpp"
-
-
 enum cell_type
 {
     INT,
     FLOAT,
 };
 
-typedef boost::variant<double, long long int, std::string> cell;
+struct cell
+{
+    union
+    {
+        long long int i;
+        double        d;
+    };
+
+    cell() {}
+    cell(long long int val) : i(val) {};
+    cell(double val)        : d(val) {};
+};
+
 struct table_view;
 
 struct table

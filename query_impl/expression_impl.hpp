@@ -1,204 +1,227 @@
 #ifndef _EXPRESSION_IMPL_H
 #define _EXPRESSION_IMPL_H
 
+#include <cassert>
 #include <cmath>
 #include <string>
-
-#include "boost/variant/apply_visitor.hpp"
 
 #include "../parser.hpp"
 #include "../table.hpp"
 
+#include "identitifer.hpp"
 #include "expression.hpp"
 #include "from.hpp"
 
-struct add_t : public boost::static_visitor<cell>
+struct binary_op : expression_t
 {
-    cell operator()(long long int& left, long long int& right) const
-    {
-        return left + right;
-    }
-
-    cell operator()(double& left, double& right) const
-    {
-        return left + right;
-    }
-
-    cell operator()(double& left, long long int& right) const
-    {
-        return left + right;
-    }
-
-    cell operator()(long long int& left, double& right) const
-    {
-        return left + right;
-    }
-
-    cell operator()(std::string& left, std::string& right) const
-    {
-        return left + right;
-    }
-
-    template<class T, class U>
-    cell operator()(T& left, U& right) const
-    {
-        return cell();
-    }
-};
-
-struct sub_t : public boost::static_visitor<cell>
-{
-    cell operator()(long long int& left, long long int& right) const
-    {
-        return left - right;
-    }
-
-    cell operator()(double& left, double& right) const
-    {
-        return left - right;
-    }
-
-    cell operator()(double& left, long long int& right) const
-    {
-        return left - right;
-    }
-
-    cell operator()(long long int& left, double& right) const
-    {
-        return left - right;
-    }
-
-    template<class T, class U>
-    cell operator()(T& left, U& right) const
-    {
-        return cell();
-    }
-};
-
-struct mult_t : public boost::static_visitor<cell>
-{
-    cell operator()(long long int& left, long long int& right) const
-    {
-        return left * right;
-    }
-
-    cell operator()(double& left, double& right) const
-    {
-        return left * right;
-    }
-
-    cell operator()(double& left, long long int& right) const
-    {
-        return left * right;
-    }
-
-    cell operator()(long long int& left, double& right) const
-    {
-        return left * right;
-    }
-
-    template<class T, class U>
-    cell operator()(T& left, U& right) const
-    {
-        return cell();
-    }
-};
-
-// div_t reserved
-struct divi_t : public boost::static_visitor<cell>
-{
-    cell operator()(long long int& left, long long int& right) const
-    {
-        return (double)left / right;
-    }
-
-    cell operator()(double& left, double& right) const
-    {
-        return left / right;
-    }
-
-    cell operator()(double& left, long long int& right) const
-    {
-        return left / right;
-    }
-
-    cell operator()(long long int& left, double& right) const
-    {
-        return left / right;
-    }
-
-    template<class T, class U>
-    cell operator()(T& left, U& right) const
-    {
-        return cell();
-    }
-};
-
-struct mod_t : public boost::static_visitor<cell>
-{
-    cell operator()(long long int& left, long long int& right) const
-    {
-        return left % right;
-    }
-
-    template<class T, class U>
-    cell operator()(T& left, U& right) const
-    {
-        return cell();
-    }
-};
-
-struct exp_t : public boost::static_visitor<cell>
-{
-    cell operator()(long long int& left, long long int& right) const
-    {
-        return pow(left, right);
-    }
-
-    cell operator()(double& left, double& right) const
-    {
-        return pow(left, right);
-    }
-
-    cell operator()(double& left, long long int& right) const
-    {
-        return pow(left, right);
-    }
-
-    cell operator()(long long int& left, double& right) const
-    {
-        return pow(left, right);
-    }
-
-    template<class T, class U>
-    cell operator()(T& left, U& right) const
-    {
-        return cell();
-    }
-};
-
-template<typename T>
-struct binary_op : expression_impl
-{
-    expression_t left;
-    expression_t right;
+    std::unique_ptr<expression_t> left;
+    std::unique_ptr<expression_t> right;
+    cell (*op)(const cell&, const cell&);
 
     binary_op(parse_tree_node node,
               from_t& from)
     {
-        left = expression_t(node.args[0], from);
-        right = expression_t(node.args[1], from);
+        assert(node.args.size() == 2);
+
+        left  = expression_factory(node.args[0], from);
+        right = expression_factory(node.args[1], from);
     }
 
     cell call() override
     {
-        auto left_arg = left.call();
-        auto right_arg = right.call();
-        return boost::apply_visitor(T(), left_arg, right_arg);
+        return (*op)(left->call(), right->call());
     }
 };
 
-struct column_accessor : expression_impl
+template<typename T, typename U>
+cell add(const cell& left, const cell& right)
+{
+    return *(const T*)&left + *(const U*)&right;
+}
+
+struct add_t : binary_op
+{
+    add_t(parse_tree_node node,
+          from_t& from) : binary_op(node, from)
+    {
+        if(left->return_type == cell_type::INT &&
+           right->return_type == cell_type::INT)
+        {
+            op = &add<long long int, long long int>;
+            return_type = cell_type::INT;
+        }
+
+        if(left->return_type == cell_type::FLOAT &&
+           right->return_type == cell_type::INT)
+        {
+            op = &add<double, long long int>;
+            return_type = cell_type::FLOAT;
+        }
+
+        if(left->return_type == cell_type::INT &&
+           right->return_type == cell_type::FLOAT)
+        {
+            op = &add<long long int , double>;
+            return_type = cell_type::FLOAT;
+        }
+
+        if(left->return_type == cell_type::FLOAT &&
+           right->return_type == cell_type::FLOAT)
+        {
+            op = &add<double, double>;
+            return_type = cell_type::FLOAT;
+        }
+    }
+};
+
+template<typename T, typename U>
+cell subtract(const cell& left, const cell& right)
+{
+    return *(const T*)&left - *(const U*)&right;
+}
+
+struct sub_t : binary_op
+{
+    sub_t(parse_tree_node node,
+          from_t& from) : binary_op(node, from)
+    {
+        if(left->return_type == cell_type::INT &&
+           right->return_type == cell_type::INT)
+        {
+            op = &subtract<long long int, long long int>;
+            return_type = cell_type::INT;
+        }
+
+        if(left->return_type == cell_type::FLOAT &&
+           right->return_type == cell_type::INT)
+        {
+            op = &subtract<double, long long int>;
+            return_type = cell_type::FLOAT;
+        }
+
+        if(left->return_type == cell_type::INT &&
+           right->return_type == cell_type::FLOAT)
+        {
+            op = &subtract<long long int , double>;
+            return_type = cell_type::FLOAT;
+        }
+
+        if(left->return_type == cell_type::FLOAT &&
+           right->return_type == cell_type::FLOAT)
+        {
+            op = &subtract<double, double>;
+            return_type = cell_type::FLOAT;
+        }
+    }
+};
+
+template<typename T, typename U>
+cell multiply(const cell& left, const cell& right)
+{
+    return (*(const T*)&left) * (*(const U*)&right);
+}
+
+struct mult_t : binary_op
+{
+    mult_t(parse_tree_node node,
+           from_t& from) : binary_op(node, from)
+    {
+        if(left->return_type == cell_type::INT &&
+           right->return_type == cell_type::INT)
+        {
+            op = &multiply<long long int, long long int>;
+            return_type = cell_type::INT;
+        }
+
+        if(left->return_type == cell_type::FLOAT &&
+           right->return_type == cell_type::INT)
+        {
+            op = &multiply<double, long long int>;
+            return_type = cell_type::FLOAT;
+        }
+
+        if(left->return_type == cell_type::INT &&
+           right->return_type == cell_type::FLOAT)
+        {
+            op = &multiply<long long int , double>;
+            return_type = cell_type::FLOAT;
+        }
+
+        if(left->return_type == cell_type::FLOAT &&
+           right->return_type == cell_type::FLOAT)
+        {
+            op = &multiply<double, double>;
+            return_type = cell_type::FLOAT;
+        }
+    }
+};
+
+template<typename T, typename U>
+cell divide(const cell& left, const cell& right)
+{
+    return (double)*(const T*)&left / *(const U*)&right;
+}
+
+struct divi_t : binary_op
+{
+    divi_t(parse_tree_node node,
+           from_t& from) : binary_op(node, from)
+    {
+        if(left->return_type == cell_type::INT &&
+           right->return_type == cell_type::INT)
+        {
+            op = &divide<long long int, long long int>;
+        }
+
+        if(left->return_type == cell_type::FLOAT &&
+           right->return_type == cell_type::INT)
+        {
+            op = &divide<double, long long int>;
+        }
+
+        if(left->return_type == cell_type::INT &&
+           right->return_type == cell_type::FLOAT)
+        {
+            op = &divide<long long int , double>;
+        }
+
+        if(left->return_type == cell_type::FLOAT &&
+           right->return_type == cell_type::FLOAT)
+        {
+            op = &divide<double, double>;
+        }
+
+        return_type = cell_type::FLOAT;
+    }
+};
+
+cell modu(const cell& left, const cell& right)
+{
+    return *(long long int*)&left % *(long long int*)&right;
+}
+
+struct mod_t : binary_op
+{
+    mod_t(parse_tree_node node,
+          from_t& from) : binary_op(node, from)
+    {
+        if(left->return_type != cell_type::INT)
+        {
+            std::cerr << "Left arg to MOD must be of expression of type INT."
+                      << std::endl;
+        }
+
+        if(right->return_type != cell_type::INT)
+        {
+            std::cerr << "Right arg to MOD must be of expression of type INT."
+                      << std::endl;
+        }
+
+        op = &modu;
+    }
+};
+
+struct column_accessor : expression_t
 {
     int column;
     std::shared_ptr<table_view> view;
@@ -206,16 +229,18 @@ struct column_accessor : expression_impl
     column_accessor(parse_tree_node node,
                     from_t& from)
     {
-        auto column_name = boost::get<std::string>(node.token.value);
-        column = from.view->resolve_column(column_name);
-        view = from.view;
+        identitifer_t identitifer(node);
+        view        = from.view;
+        column      = view->resolve_column(identitifer.id);
+        return_type = view->column_types[column];
     }
 
     column_accessor(std::string column_name,
                     from_t& from)
     {
-        column = from.view->resolve_column(column_name);
-        view = from.view;
+        view        = from.view;
+        column      = view->resolve_column(column_name);
+        return_type = view->column_types[column];
     }
 
     cell call() override
@@ -224,26 +249,27 @@ struct column_accessor : expression_impl
     }
 };
 
-struct const_expr : expression_impl
+struct const_expr : expression_t
 {
     cell value;
 
     const_expr(parse_tree_node& node,
                from_t& from)
     {
-        std::cerr << output_token(node.token) << std::endl;
-        std::cerr << node.token.value.which() << " " << node.token.value << std::endl;
-        if(node.token.t != token_t::INT_LITERAL &&
-           node.token.t != token_t::FLOAT_LITERAL &&
-           node.token.t != token_t::STR_LITERAL)
+        if(node.token.t == token_t::STR_LITERAL)
         {
-            std::cerr << "INTERNAL: No literal passed to const_expr: "
-                      << output_token(node.token) << std::endl;
+            std::cerr << "String literals not supported." << std::endl;
             throw 0;
         }
 
+        assert(node.token.t == token_t::INT_LITERAL ||
+               node.token.t == token_t::FLOAT_LITERAL);
+
         value = node.token.value;
-        std::cerr << value.which() << " " << value << std::endl;
+        if(node.token.t == token_t::INT_LITERAL)
+            return_type = cell_type::INT;
+        if(node.token.t == token_t::FLOAT_LITERAL)
+            return_type == cell_type::FLOAT;
     }
 
     cell call() override

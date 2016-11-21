@@ -27,10 +27,10 @@ std::string output_token(token_t t)
         case token_t::COMMA:         stream << "COMMA";         break;
         case token_t::END:           stream << "END";           break;
 
-        case token_t::STR_LITERAL:   stream << "STRING "      << t.value; break;
-        case token_t::INT_LITERAL:   stream << "INT "         << t.value; break;
-        case token_t::FLOAT_LITERAL: stream << "FLOAT "       << t.value; break;
-        case token_t::IDENTITIFER:   stream << "IDENTITIFER " << t.value; break;
+        case token_t::STR_LITERAL:   stream << "STRING "      << t.raw_rep; break;
+        case token_t::INT_LITERAL:   stream << "INT "         << t.value.i; break;
+        case token_t::FLOAT_LITERAL: stream << "FLOAT "       << t.value.d; break;
+        case token_t::IDENTITIFER:   stream << "IDENTITIFER " << t.raw_rep; break;
 
         case token_t::SELECT:        stream << "SELECT";    break;
         case token_t::AS:            stream << "AS";        break;

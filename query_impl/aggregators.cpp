@@ -1,96 +1,157 @@
+#include <cassert>
+#include <limits>
+
 #include "../parser.hpp"
 #include "../table.hpp"
 
 #include "aggregators.hpp"
-#include "expression_impl.hpp"
-#include "boolean_expression_impl.hpp"
 
-struct max_t : aggregator_impl
+template<typename T>
+struct max_t : aggregator_t
 {
-    cell max;
+    T max;
+    bool seen;
+
     max_t(parse_tree_node& node,
-          from_t from) : aggregator_impl(node, from) {};
+          from_t from) : aggregator_t(node, from)
+    {
+        seen = false;
+        max  = std::numeric_limits<T>::lowest();
+    }
 
     void accumulate()
     {
+        seen = true;
+        auto candidate = expr->call();
+        if(*(T*)&candidate > max) max = *(T*)&candidate;
     }
 
     cell value()
     {
-        return max;
+        if(!seen)
+        {
+            std::cerr << "Attempt to take max from empty tables." << std::endl;
+            throw 0;
+        }
+        return *(cell*)&max;
     }
 };
 
-struct min_t : aggregator_impl
+template<typename T>
+struct min_t : aggregator_t
 {
-    cell min;
+    T min;
+    bool seen;
 
     min_t(parse_tree_node& node,
-          from_t from) : aggregator_impl(node, from) {};
+          from_t from) : aggregator_t(node, from)
+    {
+        seen = false;
+        min = std::numeric_limits<T>::max();
+    }
 
     void accumulate()
     {
+        seen = true;
+        auto candidate = expr->call();
+        if(*(T*)&candidate < min) min = *(T*)&candidate;
     }
 
     cell value()
     {
-        return min;
+        if(!seen)
+        {
+            std::cerr << "Attempt to take min from empty tables." << std::endl;
+            throw 0;
+        }
+        std::cerr << "Taking min from empty tables." << std::endl;
+        return *(cell*)&min;
     }
 };
 
-struct median_t : aggregator_impl
+template<typename T>
+struct median_t : aggregator_t
 {
-    std::vector<cell> vals;
+    std::vector<T> vals;
+    unsigned long long int seen;
 
     median_t(parse_tree_node& node,
-             from_t from) : aggregator_impl(node, from) {};
-
-    void accumulate()
+             from_t from) : aggregator_t(node, from)
     {
-        vals.emplace_back(expr.call());
+        vals.resize(from.view->height());
+        seen = 0;
     }
-};
-
-struct average_t : aggregator_impl
-{
-    cell sum;
-
-    average_t(parse_tree_node& node,
-              from_t from) : aggregator_impl(node, from) {};
 
     void accumulate()
     {
+        auto val = expr->call();
+        vals[seen++] = *(T*)&val;
     }
 
     cell value()
     {
+        if(!seen)
+        {
+            std::cerr << "Attempt to take median from empty tables." << std::endl;
+            throw 0;
+        }
+
+        return cell();
     }
 };
 
-aggregator_t::aggregator_t(parse_tree_node node, from_t& from)
+template<typename T>
+struct average_t : aggregator_t
 {
-    if(boost::get<std::string>(node.token.value) == "max" ||
-       boost::get<std::string>(node.token.value) == "MAX")
+    T sum;
+    unsigned long long int seen;
+
+    average_t(parse_tree_node& node,
+              from_t from) : aggregator_t(node, from) {};
+
+    void accumulate()
+    {
+        auto val = expr->call();
+        sum += *(T*)&val;
+    }
+
+    cell value()
+    {
+        if(!seen)
+        {
+            std::cerr << "Attempt to take average from empty tables." << std::endl;
+            throw 0;
+        }
+
+        auto av = sum / seen;
+        return *(cell*)&av;
+    }
+};
+
+std::unique_ptr<aggregator_t> aggregator_factory(parse_tree_node node, from_t& from)
+{
+/*    if(node.token.raw_rep == "max" ||
+       node.token.raw_rep == "MAX")
     {
         impl = std::unique_ptr<aggregator_impl>(new max_t(node, from));
     }
-    else if(boost::get<std::string>(node.token.value) == "min" ||
-            boost::get<std::string>(node.token.value) == "MIN")
+    else if(node.token.raw_rep == "min" ||
+            node.token.raw_rep == "MIN")
     {
         impl = std::unique_ptr<aggregator_impl>(new max_t(node, from));
     }
-    else if(boost::get<std::string>(node.token.value) == "median" ||
-            boost::get<std::string>(node.token.value) == "MEDIAN")
+    else if(node.token.raw_rep == "median" ||
+            node.token.raw_rep == "MEDIAN")
     {
         impl = std::unique_ptr<aggregator_impl>(new max_t(node, from));
     }
-    else if(boost::get<std::string>(node.token.value) == "average" ||
-            boost::get<std::string>(node.token.value) == "AVERAGE")
+    else if(node.token.raw_rep == "average" ||
+            node.token.raw_rep == "AVERAGE")
     {
         impl = std::unique_ptr<aggregator_impl>(new max_t(node, from));
     }
     else
     {
         assert(0);
-    }
+    }*/
 }

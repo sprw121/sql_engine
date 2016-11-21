@@ -7,36 +7,46 @@
 #include "from.hpp"
 #include "../parser.hpp"
 
-struct aggregator_impl
+struct aggregator_t
 {
-    expression_t expr;
+    cell_type return_type;
+    std::unique_ptr<expression_t> expr;
 
-    aggregator_impl(parse_tree_node node,
-                    from_t& from)
+    aggregator_t() = default;
+    aggregator_t(parse_tree_node node, from_t& from)
     {
         if(node.args.size() != 1)
         {
             std::cerr << "Only univariate aggregators supported." << std::endl;
             throw 0;
         }
-        expr = expression_t(node.args[0], from);
+        expr = expression_factory(node.args[0], from);
+        return_type = expr->return_type;
     }
 
     virtual void accumulate() = 0;
+    virtual cell call()       = 0;
 };
 
-struct aggregator_t
+std::unique_ptr<aggregator_t> aggregator_factory(parse_tree_node, from_t&);
+
+// Doing as<expression_t> would be incompatible,
+// have a container type for that use case.
+struct aggregator_container
 {
-    std::unique_ptr<aggregator_impl> impl;
+    std::unique_ptr<aggregator_t> aggregator;
 
-    aggregator_t() = default;
-    aggregator_t(aggregator_t&& e) : impl(std::move(e.impl)) { }
-    aggregator_t& operator=(aggregator_t&& e) { impl = std::move(e.impl); return *this; }
-    aggregator_t(parse_tree_node, from_t&);
-
-    void accumulate()
+    aggregator_container() = default;
+    aggregator_container(parse_tree_node node,
+                         from_t& from)
     {
-        impl->accumulate();
+        aggregator = aggregator_factory(node, from);
+    }
+    aggregator_container(aggregator_container && e) : aggregator(std::move(e.aggregator)) { }
+    aggregator_container& operator=(aggregator_container&& e)
+    {
+        aggregator = std::move(e.aggregator);
+        return *this;
     }
 };
 

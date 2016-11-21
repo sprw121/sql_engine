@@ -8,15 +8,12 @@
 #include "parser.hpp"
 #include "table.hpp"
 
-#include "boost/functional/hash.hpp"
-
 #include "query_impl/identitifer.hpp"
 #include "query_impl/on.hpp"
 
 
-typedef std::unordered_map<cell,
-                           std::vector<unsigned int>,
-                           boost::hash<cell>> index_t;
+typedef std::unordered_map<long long int,
+                           std::vector<unsigned int>> index_t;
 
 struct table_iterator;
 
@@ -24,7 +21,7 @@ struct table_view
 {
     std::string name;
     std::vector<std::string> column_names;
-    std::vector<cell_type> column_types;
+    std::vector<cell_type>   column_types;
 
     table_view() = default;
     virtual cell access_column(unsigned int i) = 0;
@@ -101,7 +98,13 @@ struct table_iterator : table_view
         }
         name = id.id;
         column_names = table->second->column_names;
+/*        for(int i = 0; i < table->second->column_types.size(); i++)
+            std::cout << table->second->column_types[i];
+        std::cout << std::endl;*/
         column_types = table->second->column_types;
+        /*for(int i = 0; i < column_types.size(); i++)
+            std::cout << column_types[i];
+        std::cout << std::endl;*/
     }
 
     cell access_column(unsigned int i) override
@@ -199,10 +202,10 @@ struct indexed_join : table_view
         for(unsigned int i = 0; i < indexed_side->height(); i++)
         {
             auto index_cell = indexed_side->source->cells[indexed_column][i];
-            auto found = index.find(index_cell);
+            auto found = index.find(index_cell.i);
             if(found == index.end())
             {
-                index.emplace(make_pair(index_cell, std::vector<unsigned int>{i}));
+                index.emplace(make_pair(index_cell.i, std::vector<unsigned int>{i}));
             }
             else
             {
@@ -234,7 +237,7 @@ struct indexed_join : table_view
 
         }
 
-        auto found = index.find(iterator_side->access_column(iterator_column));
+        auto found = index.find(iterator_side->access_column(iterator_column).i);
         if(found != index.end())
         {
             index_cache = found->second.begin();
@@ -261,7 +264,7 @@ struct inner_join : indexed_join
     {
         while(!iterator_side->empty())
         {
-            auto found = index.find(iterator_side->access_column(iterator_column));
+            auto found = index.find(iterator_side->access_column(iterator_column).i);
             if(found != index.end())
             {
                 index_cache = found->second.begin();
@@ -293,7 +296,7 @@ struct inner_join : indexed_join
             iterator_side->advance_row();
             while(!iterator_side->empty())
             {
-                auto found = index.find(iterator_side->access_column(iterator_column));
+                auto found = index.find(iterator_side->access_column(iterator_column).i);
                 if(found != index.end())
                 {
                     index_cache = found->second.begin();
@@ -392,7 +395,7 @@ struct outer_join : indexed_join
                 iterator_side->advance_row();
                 if(!iterator_side->empty())
                 {
-                    auto found = index.find(iterator_side->access_column(iterator_column));
+                    auto found = index.find(iterator_side->access_column(iterator_column).i);
                     if(found != index.end())
                     {
                         index_cache = found->second.begin();
@@ -460,7 +463,7 @@ struct left_outer_join : indexed_join
             iterator_side->advance_row();
             if(!iterator_side->empty())
             {
-                auto found = index.find(left->access_column(left_column));
+                auto found = index.find(left->access_column(left_column).i);
                 if(found != index.end())
                 {
                     index_cache = found->second.begin();
@@ -516,7 +519,7 @@ struct right_outer_join : indexed_join
             iterator_side->advance_row();
             if(!iterator_side->empty())
             {
-                auto found = index.find(right->access_column(right_column));
+                auto found = index.find(right->access_column(right_column).i);
                 if(found != index.end())
                 {
                     index_cache = found->second.begin();
