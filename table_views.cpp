@@ -411,33 +411,20 @@ struct outer_join : indexed_join
     }
 };
 
-struct left_outer_join : indexed_join
-{
-    left_outer_join(std::shared_ptr<table_iterator> left_,
-                    std::shared_ptr<table_iterator> right_,
-                    on_t on) : indexed_join(left_, right_, on, RIGHT) {};
+// Generic sided join iteration logic
+// Index the side opposite our join,
+// Iterate over the side of the join and
+// match up if a lookup exists.
 
-    cell access_column(unsigned int i) override
-    {
-        if(i >= left->width())
-        {
-            if(index_cache != empty_cache)
-            {
-                return right->source->cells[i - left->width()][*index_cache];
-            }
-            else
-            {
-                return cell();
-            }
-        }
-        else
-        {
-            return left->access_column(i);
-        }
-    }
+struct sided_join : indexed_join
+{
+    sided_join(std::shared_ptr<table_iterator> left_,
+               std::shared_ptr<table_iterator> right_,
+               on_t on, index_side side_) : indexed_join(left_, right_, on, side_) {};
 
     void advance_row() override
     {
+        // Iterate over matching rows if we've lookup them up already
         if(index_cache == empty_cache || ++index_cache == empty_cache)
         {
             iterator_side->advance_row();
@@ -467,11 +454,42 @@ struct left_outer_join : indexed_join
     }
 };
 
-struct right_outer_join : indexed_join
+// left_outer_join and right_outer_join implement
+// column lookup logic on top of sided joins,
+// as the logic as to which side to generate null values for is
+// reverse
+struct left_outer_join : sided_join
+{
+    left_outer_join(std::shared_ptr<table_iterator> left_,
+                    std::shared_ptr<table_iterator> right_,
+                    on_t on) : sided_join(left_, right_, on, RIGHT) {};
+
+    cell access_column(unsigned int i) override
+    {
+        if(i >= left->width())
+        {
+            if(index_cache != empty_cache) // Right side is indexed
+            {
+                return right->source->cells[i - left->width()][*index_cache];
+            }
+            else
+            {
+                return cell();
+            }
+        }
+        else
+        {
+            return left->access_column(i);
+        }
+    }
+
+};
+
+struct right_outer_join : sided_join
 {
     right_outer_join(std::shared_ptr<table_iterator> left_,
                      std::shared_ptr<table_iterator> right_,
-                     on_t on) : indexed_join(left_, right_, on, LEFT) {};
+                     on_t on) : sided_join(left_, right_, on, LEFT) {};
 
     cell access_column(unsigned int i) override
     {
@@ -481,45 +499,15 @@ struct right_outer_join : indexed_join
         }
         else
         {
-            if(index_cache == empty_cache)
-            {
-                return cell();
-            }
-            else
+            if(index_cache != empty_cache) // Left side is indexed
             {
                 return left->source->cells[i][*index_cache];
             }
-        }
-    }
-
-    void advance_row() override
-    {
-        if(index_cache == empty_cache || ++index_cache == empty_cache)
-        {
-            iterator_side->advance_row();
-            if(!iterator_side->empty())
+            else
             {
-                auto found = index.find(right->access_column(right_column).i);
-                if(found != index.end())
-                {
-                    index_cache = found->second.begin();
-                    empty_cache = found->second.end();
-                }
+                return cell();
             }
         }
-    }
-
-    bool empty() override
-    {
-        return index.size() == 0 || iterator_side->empty();
-    }
-    unsigned int width() override
-    {
-        return indexed_side->width() + iterator_side->width();
-    }
-    unsigned int height() override
-    {
-        return iterator_side->height();
     }
 };
 
@@ -592,6 +580,7 @@ struct cross_join : table_view
     }
 };
 
+// Implemented logic to generate views when necessary from our parse_tree
 view_factory::view_factory(parse_tree_node& node, table_map_t& tables)
 {
     switch(node.token.t)
@@ -626,6 +615,12 @@ view_factory::view_factory(parse_tree_node& node, table_map_t& tables)
             }
 
             on_t on(node.args[0]);
+            // We need to be able to index by row,
+            // So just a concrete in memory table representation
+            // If they're not already concrete tables
+            // We don't have to do this necessarily,
+            // but the logic to support row indexing from arbitary
+            // select or joins is too complicated.
             auto left_container     = view_factory(node.args[2], tables);
             auto left_view          = left_container.view;
             auto left_side          = left_view->load();
@@ -664,6 +659,8 @@ view_factory::view_factory(parse_tree_node& node, table_map_t& tables)
                 throw 0;
             }
 
+            // Don't necessarily need to load these guys, but
+            // we do need to reset, just load them for now
             auto left_container     = view_factory(node.args[0], tables);
             auto left_view          = left_container.view;
             auto left_side          = left_view->load();

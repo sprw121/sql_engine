@@ -27,7 +27,7 @@ struct cell
         double        d;
     };
 
-    cell() {}
+    cell()                  : i(0) {};
     cell(long long int val) : i(val) {};
     cell(double val)        : d(val) {};
 };
