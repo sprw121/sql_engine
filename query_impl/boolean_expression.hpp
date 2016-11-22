@@ -13,6 +13,7 @@
 struct boolean_expression_t
 {
     virtual bool call() = 0;
+    virtual ~boolean_expression_t() = default;
 };
 
 std::unique_ptr<boolean_expression_t> boolean_factory(parse_tree_node, from_t&);

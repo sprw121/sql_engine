@@ -35,15 +35,16 @@ struct table_view
     virtual unsigned int width() = 0;
     virtual unsigned int height() = 0;
     virtual std::shared_ptr<table_iterator> load() = 0;
+    virtual ~table_view() = default;
 
     unsigned int resolve_column(std::string column_name)
     {
         if(name != "")
         {
-            std::string qualified_column_name = name + "." + column_name;
             for(unsigned int i = 0; i < width(); i++)
             {
-                if(column_names[i] == qualified_column_name)
+                std::string qualified_column_name = name + "." + column_names[i];
+                if(column_name == qualified_column_name)
                 {
                     return i;
                 }

@@ -17,6 +17,7 @@ struct expression_t
     expression_t(parse_tree_node, from_t&);
 
     virtual cell call() = 0;
+    virtual ~expression_t() = default;
 };
 
 std::unique_ptr<expression_t> expression_factory(parse_tree_node, from_t&);

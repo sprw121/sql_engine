@@ -24,6 +24,7 @@ struct aggregator_t
 
     virtual void accumulate() = 0;
     virtual cell value()      = 0;
+    virtual ~aggregator_t()   = default;
 };
 
 std::unique_ptr<aggregator_t> aggregator_factory(parse_tree_node, from_t&);

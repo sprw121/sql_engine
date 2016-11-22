@@ -3,7 +3,8 @@
 
 struct query_object
 {
-    virtual void run() { }
+    virtual void run() = 0;
+    virtual ~query_object() = default;
 };
 
 #endif
