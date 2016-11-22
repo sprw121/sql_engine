@@ -3,6 +3,8 @@
 
 //#define DEBUG
 
+// Simple precedence rules can model the basic queries we want to do.
+// Left vs. right associativity not implemented.
 int precedence(token_t t)
 {
     switch(t.t)
@@ -45,7 +47,9 @@ int precedence(token_t t)
     throw 0;
 }
 
-
+// Bind a binary infix expression from the value stack.
+// Check to see if the expression we expect is in the middle,
+// otherwise we have an invalid expression.
 parse_tree_node bind_binary(token_t operation,
                             std::vector<parse_tree_node>& parse_tree)
 {
@@ -69,6 +73,12 @@ parse_tree_node bind_binary(token_t operation,
     return parse_tree_node(operation, std::vector<parse_tree_node>{left, right});
 }
 
+// Called when we see a lower precedence operation than the
+// one current one the top of the operator stack.
+
+// Binds all the operator to values from the top of the value stack until
+// we can push the current operator. The arg list to the node is
+// reversed due to implementation.
 void bind_top(std::vector<token_t>& operations,
           std::vector<parse_tree_node>& parse_tree)
 {
@@ -94,6 +104,12 @@ void bind_top(std::vector<token_t>& operations,
         case token_t::WHERE:  case token_t::LIMIT:
         case token_t::LOAD:
         {
+            // Bind all the values on the value stack to the
+            // current operation.
+
+            // Ignore commas would be safer to check if commas
+            // separate the values, but this should cause push
+            // errors elsewhere
             std::vector<parse_tree_node> arg_list;
             while(parse_tree.size() &&
                   parse_tree.back().token.t != op.t)
@@ -148,11 +164,16 @@ void bind_top(std::vector<token_t>& operations,
     throw 0;
 }
 
-// Really big method, some would break out the logic for each case
-// into a function, but I personally find the code more understandable
-// with all the logic inline here.
+// The basic idea here is to keep two stacks, one of
+// operation and one of values. operation are pushed onto
+// both stacks, but as an empty value in order to do error
+// checking. Always push values onto the stack, push operators
+// onto the operator stack if it's precedence allows,
+// otherwise bind operations with values off the top
+// of the value stack, and then push the bound operation
+// back onto the value stack as a value.
 
-// Processes all the tokens
+// Variadic operations, function, and commas are supported
 parse_tree_node parse(std::vector<token_t>& tokens)
 {
     std::vector<parse_tree_node> parse_tree;
@@ -175,6 +196,8 @@ parse_tree_node parse(std::vector<token_t>& tokens)
             case token_t::STR_LITERAL:   case token_t::IDENTITIFER:
             case token_t::TABLES:        case token_t::EXIT:
             {
+                // Push value onto the value stack if theres on empty operation to bind it.
+                // Commas are considered operation, so can separate values.
                 if(parse_tree.empty() || parse_tree.back().a_type == parse_tree_node::OPERATION)
                 {
                     parse_tree.push_back(parse_tree_node(parse_tree_node::VALUE, token));
@@ -187,20 +210,44 @@ parse_tree_node parse(std::vector<token_t>& tokens)
                 }
                 break;
             }
+            // Functions always get pushed.
+            // While these are consider operations, they we only pushed
+            // if theres an operation to bind them to. We know they will
+            // be bound into a value before the previous operation.
             case token_t::PAREN_OPEN:    case token_t::FUNCTION:
             {
-                operations.push_back(token);
-                parse_tree.push_back(parse_tree_node(parse_tree_node::OPERATION, token));
+                if(!parse_tree.size() && parse_tree.back().a_type == parse_tree_node::OPERATION)
+                {
+                    operations.push_back(token);
+                    parse_tree.push_back(parse_tree_node(parse_tree_node::OPERATION, token));
+                }
+                else
+                {
+                    std::cerr << "Attempting to push unbindable token: "
+                              << output_token(token) << std::endl;
+                    throw 0;
+                }
                 break;
             }
+            // Close paren binds all the operations on the operation stack until
+            // an open paren.
             case token_t::PAREN_CLOSE:
             {
                 while(operations.size() && operations.back().t != token_t::PAREN_OPEN)
                 {
                     bind_top(operations, parse_tree);
                 }
+                if(!operations.size())
+                {
+                    std::cerr << "Unmatched close parent." << std::endl;
+                    throw 0;
+                }
                 operations.pop_back(); // PAREN_OPEN
 
+                // Close paren can close a tuple or function with a comma
+                // separate arg list. We need to take all values off the value
+                // stack and bind them into an arg_list for the associated function.
+                // Tuple not supported, but could be trivially implemented.
                 std::vector<parse_tree_node> arg_list;
                 while(parse_tree.size() && parse_tree.back().token.t != token_t::PAREN_OPEN)
                 {
@@ -215,11 +262,14 @@ parse_tree_node parse(std::vector<token_t>& tokens)
                 }
                 parse_tree.pop_back(); // PAREN_OPEN
 
-                if(parse_tree.size() && parse_tree.back().token.t == token_t::FUNCTION)
+                // Must have a function to bind the arg list to.
+                if(parse_tree.size() &&
+                    parse_tree.back().token.t == token_t::FUNCTION &&
+                    parse_tree.back().a_type != parse_tree_node::VALUE)
                 {
                     auto tmp = pop_back(operations); //FUNCTION
                     parse_tree.pop_back();           //FUNCTION
-                    parse_tree.push_back(parse_tree_node(tmp, arg_list));
+                    parse_tree.push_back(parse_tree_node(tmp, arg_list)); // Push as value
                 }
                 else // Tuples not supported, 1 args == normal expression
                 {
@@ -281,6 +331,8 @@ parse_tree_node parse(std::vector<token_t>& tokens)
                 }
             }
             DEFAULT:
+            // Otherwise we're seeing an operation, bind if necessary
+            // and push it.
             default:
             {
                 while(operations.size() &&
@@ -295,6 +347,7 @@ parse_tree_node parse(std::vector<token_t>& tokens)
         }
     }
 
+    // Bind all remaining operations
     while(operations.size())
     {
 #ifdef DEBUG
@@ -313,7 +366,7 @@ parse_tree_node parse(std::vector<token_t>& tokens)
         tree.print();
     }
 #else
-    if(parse_tree.size() > 1)
+    if(parse_tree.size() > 1) // We had unbindable values
     {
         for(auto& tree: parse_tree)
         {
@@ -323,11 +376,11 @@ parse_tree_node parse(std::vector<token_t>& tokens)
     }
 #endif
 
-    if(parse_tree.size() > 1)
+    if(parse_tree.size() > 1)  // Error out
     {
         std::cerr << "Unbound expressions after attempting to build parse tree." << std::endl;
         throw 0;
     }
 
-    return pop_back(parse_tree);
+    return pop_back(parse_tree); // Last value on the value stack is our bound parse tree
 }

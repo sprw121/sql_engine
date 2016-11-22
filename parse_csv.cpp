@@ -82,6 +82,7 @@ cell_type infer_type(const char* str)
     throw 0;
 }
 
+// Accumulates a type along a column.
 std::vector<cell_type> infer_column_types(std::vector<std::vector<char*>> ir)
 {
     std::vector<cell_type> ret(ir[0].size(), cell_type::INT);

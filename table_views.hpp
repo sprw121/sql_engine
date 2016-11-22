@@ -12,6 +12,11 @@
 #include "query_impl/on.hpp"
 
 
+// Interface to table-like structures.
+// Provide basic iteration features
+// and necessary information.
+
+
 typedef std::unordered_map<long long int,
                            std::vector<unsigned int>> index_t;
 
@@ -58,6 +63,7 @@ struct table_view
     }
 };
 
+// Special view wraps a table.
 struct table_iterator : table_view
 {
     unsigned int            current_row;

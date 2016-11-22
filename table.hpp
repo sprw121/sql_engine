@@ -14,6 +14,11 @@ enum cell_type
     FLOAT,
 };
 
+// Unsafe support for multi data types.
+// Must check the column the cell is coming
+// from in order to access it correctly
+// Also, must do type inference in the
+// expression compilation.
 struct cell
 {
     union
@@ -32,7 +37,7 @@ struct table_view;
 struct table
 {
     std::vector<std::string>        column_names;
-    std::vector<cell_type>               column_types;
+    std::vector<cell_type>          column_types;
     std::vector<std::vector<cell>>  cells;
     unsigned int                    width, height;
 

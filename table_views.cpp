@@ -13,6 +13,8 @@ table_iterator::table_iterator(const table_iterator& other) : table_view()
     column_types = other.column_types;
 }
 
+// Joins want to have table_iterators for row-based access.
+// Provide an interface for them.
 table_iterator::table_iterator(table_view& view) : table_view()
 {
     current_row = 0;
@@ -72,13 +74,24 @@ unsigned int table_iterator::height()
     return source->height;
 }
 
+// Would be nice to return a pointer to this, can't
+// because them our reference count would exist in
+// two places.
 std::shared_ptr<table_iterator> table_iterator::load()
 {
     return std::shared_ptr<table_iterator>(new table_iterator(*this));
 }
 
+// Base class for left, right, outer, inner joins
+// that deals with the construction of an index.
+
+// Indexed joins allow for joining on non-unique
+// columns by stores a map key -> vector<index>,
+// Lookups then cache an iterator to this vector,
+// which we then iterator over.
 struct indexed_join : table_view
 {
+    // Refers to side indexed
     enum index_side
     {
         LEFT,
@@ -90,6 +103,8 @@ struct indexed_join : table_view
     std::shared_ptr<table_iterator> iterator_side;
     int iterator_column, indexed_column;
 
+    // Hold addtion pointers for access in
+    // certain places in derived classes.
     std::shared_ptr<table_iterator> left;
     std::shared_ptr<table_iterator> right;
     int left_column, right_column;
@@ -109,6 +124,24 @@ struct indexed_join : table_view
     {
         left_column = left->resolve_column(on.left_id.id);
         right_column = right->resolve_column(on.right_id.id);
+
+        // Can only join on int columns, doesn't really make
+        // sense to join on floats?
+        if(left->column_types[left_column] != cell_type::INT)
+        {
+            std::cerr << "Joining on non-integer column not supported in "
+                      << "left side of join." << std::endl;
+            throw 0;
+        }
+
+        if(right->column_types[right_column] != cell_type::INT)
+        {
+            std::cerr << "Joining on non-integer column not supported in "
+                      << "right side of join." << std::endl;
+            throw 0;
+        }
+
+        // If we can, index the smaller side
         if(side_ == HEIGHT)
         {
             side = left->height() > right->height() ? RIGHT : LEFT;
@@ -190,12 +223,15 @@ struct indexed_join : table_view
     }
 };
 
+// Index the smaller side, iterate over the larger side
+// and until we find rows that match with the index.
 struct inner_join : indexed_join
 {
     inner_join(std::shared_ptr<table_iterator> left_,
                std::shared_ptr<table_iterator> right_,
                on_t on) : indexed_join(left_, right_, on, HEIGHT)
     {
+        // Need to do first lookup in constructor.
         while(!iterator_side->empty())
         {
             auto found = index.find(iterator_side->access_column(iterator_column).i);
@@ -225,8 +261,10 @@ struct inner_join : indexed_join
 
     void advance_row() override
     {
+        // If the last lookup has run out of indicies
         if(++index_cache == empty_cache)
         {
+            // Find the next row with that matchs on the index
             iterator_side->advance_row();
             while(!iterator_side->empty())
             {
@@ -260,6 +298,12 @@ struct inner_join : indexed_join
     }
 };
 
+// Index the smaller side, iterate over the larger side,
+// if we have a index match, iterator over the matching rows.
+// If you don't match, just produce null columns. NULL
+// is not supported by cell, so these just get 0 values.
+// Store which rows we see, so when we iterate over the indexed side
+// we can skip them.
 struct outer_join : indexed_join
 {
     std::vector<bool> visited;
@@ -280,11 +324,11 @@ struct outer_join : indexed_join
 
     cell access_column(unsigned int i) override
     {
-        if(!iterator_side->empty())
-            if(i >= left->width())
-                if(side == LEFT)
+        if(!iterator_side->empty()) // We're still iterating over the non-indexed side
+            if(i >= left->width()) // Right column lookup
+                if(side == LEFT) // Right side is iterator
                     return right->access_column(i - left->width());
-                else
+                else // Left side is iterator, try to lookup
                 {
                     if(index_cache != empty_cache)
                     {
@@ -294,8 +338,8 @@ struct outer_join : indexed_join
                     else
                         return cell();
                 }
-            else
-                if(side == LEFT)
+            else  // Left column lookup
+                if(side == LEFT) // Left side is indexe
                 {
                     if(index_cache != empty_cache)
                     {
@@ -307,14 +351,14 @@ struct outer_join : indexed_join
                 }
                 else
                     return left->access_column(i);
-        else
-            if(i >= left->width())
+        else // If we're iterating over the indexed_side
+            if(i >= left->width()) // Right column lookup
                 if(side == LEFT)
                     return cell();
-                else
+                else // Right side was indexed, and we're iterating over the indexed_side
                     return right->source->cells[i - left->width()][next_unvisited];
-            else
-                if(side == LEFT)
+            else // Left column lookup
+                if(side == LEFT) // Left side was indexed, and we're iterating over the indexed_side
                     return left->source->cells[i][next_unvisited];
                 else
                     return cell();
@@ -324,6 +368,7 @@ struct outer_join : indexed_join
     {
         if(!iterator_side->empty())
         {
+            // If we don't have any match rows to iterate over
             if(index_cache == empty_cache || ++index_cache == empty_cache)
             {
                 iterator_side->advance_row();
@@ -341,6 +386,7 @@ struct outer_join : indexed_join
         else
         {
             next_unvisited++;
+            // Skip ones we visited
             while(next_unvisited < visited.size() &&
                   visited[next_unvisited])
             {
@@ -477,6 +523,7 @@ struct right_outer_join : indexed_join
     }
 };
 
+// Relatively trivial join
 struct cross_join : table_view
 {
     std::shared_ptr<table_iterator> left;

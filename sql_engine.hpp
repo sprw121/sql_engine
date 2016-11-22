@@ -1,5 +1,5 @@
 #ifndef _SQL_ENGINE_H
-#define _SQL_ENGINE
+#define _SQL_ENGINE_H
 
 #include <algorithm>
 #include <cstring>
@@ -17,6 +17,12 @@
 
 #include "query_impl/compile.hpp"
 #include "query_impl/query_object.hpp"
+
+// Simple class to orchestrate the query input,
+// lexing, parsing, compilation, and running of queries.
+
+// Responsible for holding the currently loaded tables
+// to pass to query compilation.
 
 struct sql_engine
 {

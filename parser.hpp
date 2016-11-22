@@ -1,5 +1,5 @@
-#ifndef _RPN_PARSER_H
-#define _RPN_PARSER_H
+#ifndef _PARSER_H
+#define _PARSER_H
 
 #include <iostream>
 #include <vector>
@@ -7,15 +7,15 @@
 #include "lexer.hpp"
 #include "util.hpp"
 
-//#define DEBUG
-
 struct parse_tree_node
 {
+    // Keep track of whether or not we're a value or unbound operation
     enum abstract_type
     {
+        // Intermediatary states
         EMPTY,
-        // Intermediatory states
         OPERATION,
+
         VALUE,
     };
 

@@ -116,6 +116,8 @@ static token_t::token_type resolve_token_string(std::string token_string)
     if(token_string == "or" || token_string == "OR")
         return token_t::OR;
 
+    // Resolve functions names to function here, as they parse the same.
+    // Must check token for the function name later.
     if(token_string == "max"     || token_string == "MAX"    ||
        token_string == "min"     || token_string == "MIN"    ||
        token_string == "median"  || token_string == "MEDIAN" ||
@@ -166,6 +168,7 @@ static token_t::token_type resolve_token_char(char input)
     return token_t::INVALID;
 }
 
+// Check for special conditions of operators
 token_t lexer::lex_operator(token_t::token_type token)
 {
     idx++;
@@ -192,7 +195,7 @@ token_t lexer::lex_operator(token_t::token_type token)
             return token_t(token_t::GTEQ);
         }
     }
-    else if(token == token_t::BANG)
+    else if(token == token_t::BANG) // !=
     {
         if(resolve_token_char(query[idx]) == token_t::EQUAL)
         {
@@ -204,6 +207,7 @@ token_t lexer::lex_operator(token_t::token_type token)
     return token_t(token);
 }
 
+// Very basic string literal lexing. Just go until next quotation.
 token_t lexer::lex_string()
 {
     int start = idx;
@@ -227,6 +231,8 @@ token_t lexer::lex_string()
     return ret;
 }
 
+// Enter here when we see a non-operator, non-whitespace, non-quotation character.
+// Gather everything until the next one of those special characters.
 token_t lexer::lex_word()
 {
     int start = idx;
@@ -245,6 +251,7 @@ token_t lexer::lex_word()
     return token_t(t, token_string);
 }
 
+// Token generator
 bool lexer::next_token(token_t& token)
 {
     while(idx != query.size() && is_white(query[idx]))

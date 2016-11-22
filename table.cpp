@@ -9,6 +9,7 @@
 #include "table.hpp"
 #include "table_views.hpp"
 
+// Reconstruct a table from a file
 table::table(std::string& file_name)
 {
     std::vector<std::vector<char*>> ir = parse_csv(file_name);
@@ -24,6 +25,11 @@ table::table(std::string& file_name)
     height       = cells[0].size();
 }
 
+// Called from table_view if we want to load
+// a non-trivial table_view from (join, select) into memory,
+// as a concrete table.
+
+// The only use case that requires this currently is for non-trivial joins.
 table::table(table_view& view)
 {
     cells = std::vector<std::vector<cell>>(view.width(),

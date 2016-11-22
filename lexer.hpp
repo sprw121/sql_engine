@@ -6,6 +6,10 @@
 #include "table.hpp"
 #include "util.hpp"
 
+// Relatively self-documenting.
+// Contains a type of token, potentials a cell
+// value for literals, and the raw
+// representation we came from in the input string.
 struct token_t
 {
     enum token_type
