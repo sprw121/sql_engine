@@ -29,8 +29,9 @@ terminal, with the table arguments already loaded.
 Commands must be terminated with a semi-colon.
 
 A simple compile script is included. This project
-was built and tested with
+was built and tested with:
 g++ (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609
+-std=c++11
 
 Some of the ways that the data is stored and accessed
 to support multiple column types may vary from compiler
