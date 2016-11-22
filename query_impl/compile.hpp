@@ -28,13 +28,13 @@
 #include "show.hpp"
 #include "where.hpp"
 
-// This file contains all the code necessary to compile
-// a query parse tree into an executable query.
+// Entry point for query compilation.
 
-// The general pattern here is for each token to to
-// Have it's own struct, and the constructor of that
+// The general pattern throughout query_impl is for each token to
+// have it's own struct, and the constructor of that
 // struct takes the associated node in the parse_tree
-// to construct itself.
+// to construct itself and potential children
+// Some polymorphic node need to have factory methods
 
 // The table_name -> table map from inside the engine
 // is also passed around in other to resolve identitifers

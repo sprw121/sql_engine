@@ -8,6 +8,9 @@
 
 #include "query_object.hpp"
 
+// Only show TABLES is implemented.
+// Takes a pointer to the table list,
+// and lists all the keys.
 struct show_t : query_object
 {
     table_map_t* tables;

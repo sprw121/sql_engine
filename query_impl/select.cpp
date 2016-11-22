@@ -9,6 +9,10 @@
 #include "as.hpp"
 #include "expression.hpp"
 
+// Column select only take expressions in as
+// our output columns. Iterates over the
+// rows and generates column by executing the
+// series of expressions on the current row.
 struct column_select : select_t
 {
     std::vector<std::unique_ptr<expression_t>> columns;
@@ -87,6 +91,9 @@ struct column_select : select_t
     }
 };
 
+// Aggregate selects also from a table view,
+// but only 1 row high, with the row being the
+// values of the accumulators
 struct aggregate_select : select_t
 {
     std::vector<std::unique_ptr<aggregator_t>> columns;
@@ -122,6 +129,7 @@ struct aggregate_select : select_t
             }
         }
 
+        // Iterate over ourself, calls our aggregator expressions
         while(!it.empty())
         {
             for(auto& column : columns)
@@ -156,6 +164,11 @@ struct aggregate_select : select_t
     }
 };
 
+// Logic for constructing a select is somewhat involved,
+// And the type of select we're doing isn't known until
+// we see the expressions that our generating the columns.
+// Thus we need a factory method that calls the appropriate constructor
+// Parser constructs the arguments in reverse order.
 std::unique_ptr<select_t> select_factory(parse_tree_node& node,
                                          table_map_t& tables)
 {
@@ -172,6 +185,9 @@ std::unique_ptr<select_t> select_factory(parse_tree_node& node,
     parse_tree_node where_node;
     unsigned int i = 0;
 
+    // Unpack all our possible clauses,
+    // Check the validity of each clause with respect to what we've
+    // already processed
     for(auto& arg : node.args)
     {
         switch(arg.token.t)
@@ -213,7 +229,7 @@ std::unique_ptr<select_t> select_factory(parse_tree_node& node,
             case token_t::FROM:
             {
                 from = from_t(arg, tables);
-                goto end_loop;
+                goto end_loop; // End loop after we process our FROM clause
             }
             default:
             {
@@ -240,6 +256,10 @@ std::unique_ptr<select_t> select_factory(parse_tree_node& node,
         throw 0;
     }
 
+    // Preprocess our column expression arguments.
+    // Track whether we're doing an aggregate or column select
+    // Arguments are in reverse order, so push them onto a stack
+    // So we can processing them in order.
     bool seen_column_selector = false, seen_aggregator = false;
     std::stack<parse_tree_node> expression_stack;
     while(i < node.args.size())
@@ -265,6 +285,7 @@ std::unique_ptr<select_t> select_factory(parse_tree_node& node,
         expression_stack.push(node.args[i++]);
     }
 
+    // Dispath to appropciate select subtype
     if(seen_column_selector)
         return std::unique_ptr<select_t>(
             new column_select(from, where_node, limit, offset, expression_stack));

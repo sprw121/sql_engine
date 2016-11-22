@@ -5,6 +5,7 @@
 
 #include "../parser.hpp"
 
+// Wraps extraction of an identitifer
 struct identitifer_t
 {
     std::string id;

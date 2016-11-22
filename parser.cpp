@@ -216,7 +216,7 @@ parse_tree_node parse(std::vector<token_t>& tokens)
             // be bound into a value before the previous operation.
             case token_t::PAREN_OPEN:    case token_t::FUNCTION:
             {
-                if(!parse_tree.size() && parse_tree.back().a_type == parse_tree_node::OPERATION)
+                if(!parse_tree.size() || parse_tree.back().a_type == parse_tree_node::OPERATION)
                 {
                     operations.push_back(token);
                     parse_tree.push_back(parse_tree_node(parse_tree_node::OPERATION, token));

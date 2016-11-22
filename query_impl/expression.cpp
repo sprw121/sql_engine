@@ -38,6 +38,15 @@ std::unique_ptr<expression_t> expression_factory(parse_tree_node node, from_t& f
         {
             return std::unique_ptr<expression_t>(new mod_t(node,from));
         }
+        case token_t::NEGATE:
+        {
+            return std::unique_ptr<expression_t>(new negate_t(node,from));
+        }
+        case token_t::CARAT:
+        {
+            std::cerr << "Exponentiation not implemented." << std::endl;
+            throw 0;
+        }
     }
 
     std::cerr << "Unexpected arg where expection expression. Parse tree:" << std::endl;

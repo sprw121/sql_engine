@@ -5,6 +5,11 @@
 
 #include "from.hpp"
 
+// Very similar to expression,
+// but call returns a bool.
+
+// Should unify with expressions,
+// But this was quicker and safer
 struct boolean_expression_t
 {
     virtual bool call() = 0;

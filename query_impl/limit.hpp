@@ -5,6 +5,7 @@
 
 #include "../parser.hpp"
 
+// Wraps unpacking of limit expression
 struct limit_t
 {
     long long int limit;

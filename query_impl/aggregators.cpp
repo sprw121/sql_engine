@@ -66,6 +66,10 @@ struct min_t : aggregator_t
     }
 };
 
+// Implements quick select pivot based selection algorithm.
+// We allocate up from all the space that might be necessary,
+// although we may not fill them all as some views return a
+// speculative maximum height.
 template<typename T>
 struct median_t : aggregator_t
 {
@@ -85,6 +89,11 @@ struct median_t : aggregator_t
         vals[seen++] = *(T*)&val;
     }
 
+    // Partitions the underlying array around pivot,
+    // such that all smaller elements come before
+    // and larger elements come after.
+
+    // Inclusion left and right, [left, right]
     unsigned int partition(unsigned int left, unsigned int right)
     {
         auto pivot     = vals[right];
@@ -93,38 +102,52 @@ struct median_t : aggregator_t
 
         while(left < right)
         {
+            // Swap if we can
             if(vals[left] >= pivot && vals[right] < pivot)
             {
                 std::swap(vals[left], vals[right]);
                 left++;
                 right--;
             }
+            // Skip those already in place
             if(vals[right] >= pivot)
                 right--;
             if(vals[left] < pivot)
                 left++;
         }
 
-        if(left == right)
-            if(vals[left] > pivot)
-                std::swap(vals[left], vals[pivot_idx]);
-            else
-                std::swap(vals[++left], vals[pivot_idx]);
+        // If we end up in the situation where left == right
+        // they could have gotten there by both jumping
+        // on the last loop iteration, therefore not processing
+        // that element, so we have to check whether we can swap
+        // pivot in here, or at the element to the right,
+        // which has definitely been processed.
+        // otherwise, left and right passed eachother,
+        // and we know that left points at an element
+        // that has been processed because right has
+        // previously pointed at it.
+        if(left == right && vals[left] <= pivot)
+            std::swap(vals[++left], vals[pivot_idx]);
+        else
+            std::swap(vals[left], vals[pivot_idx]);
         return left;
     }
 
+    // Process the range [left, right]
     T quick_select_impl(unsigned int left, unsigned int right, unsigned int kth)
     {
+        // 1 element list
         if(right == left)
         {
             return vals[left];
         }
 
+        // Partion the array, check where our pivot ended up.
+        // If it ended on k, we're done, else recursive
+        // go to either the left or right.
         auto pivot_idx = this->partition(left, right);
         if(pivot_idx == kth)
-        {
             return vals[pivot_idx];
-        }
         else if(pivot_idx > kth)
             return this->quick_select_impl(left, pivot_idx-1, kth);
         else if(pivot_idx < kth)
@@ -181,6 +204,10 @@ struct average_t : aggregator_t
     }
 };
 
+// Here we first compile the expression that the aggregator aggregates,
+// and construct the appropriate template.
+
+// Constructor takes the expression and sets the return type.
 std::unique_ptr<aggregator_t> aggregator_factory(parse_tree_node node, from_t& from)
 {
     if(node.args.size() != 1)

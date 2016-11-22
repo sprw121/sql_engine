@@ -3,6 +3,9 @@
 
 #include "query_object.hpp"
 
+// Self - explanatory. Due to the parsing stage
+// The only valid statements with exit in them is
+// "exit".
 struct exit_t : query_object
 {
     void run() override

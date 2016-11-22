@@ -3,44 +3,29 @@
 
 #include <iostream>
 #include <stack>
-#include <queue>
 #include <vector>
 
 template<typename T>
-T pop_front(std::queue<T>& q)
+T pop_top(std::stack<T>& s)
 {
     T t;
 
-    if(q.size())
+    if(s.size())
     {
-        t = q.front();
-        q.pop();
+        t = s.top();
+        s.pop();
     }
 
     return t;
 }
 
 template<typename T>
-T pop_top(std::stack<T>& q)
+T pop_back(std::vector<T>& v)
 {
-    T t;
-
-    if(q.size())
+    if(v.size())
     {
-        t = q.top();
-        q.pop();
-    }
-
-    return t;
-}
-
-template<typename T>
-T pop_back(std::vector<T>& q)
-{
-    if(q.size())
-    {
-        T t = q.back();
-        q.pop_back();
+        T t = v.back();
+        v.pop_back();
         return t;
     }
     else

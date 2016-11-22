@@ -12,6 +12,10 @@
 #include "expression.hpp"
 #include "from.hpp"
 
+// Binary operations derived from here,
+// and set there appropriate op function
+// based on the return types of the left
+// and right expressions.
 struct binary_op : expression_t
 {
     std::unique_ptr<expression_t> left;
@@ -33,6 +37,8 @@ struct binary_op : expression_t
     }
 };
 
+// Unsafe way of implementing operations,
+// but quit efficient and works on x86
 template<typename T, typename U>
 cell add(const cell& left, const cell& right)
 {
@@ -221,6 +227,38 @@ struct mod_t : binary_op
     }
 };
 
+template<typename T>
+cell negate(const cell& operand)
+{
+    return *(T*)&operand * -1;
+}
+
+struct negate_t : expression_t
+{
+    std::unique_ptr<expression_t> operand;
+    cell (*op)(const cell&);
+
+    negate_t(parse_tree_node node,
+             from_t& from)
+    {
+        if(operand->return_type == cell_type::INT)
+        {
+            op = &negate<long long int>;
+        }
+        if(operand->return_type == cell_type::FLOAT)
+        {
+            op = &negate<double>;
+        }
+        return_type = operand->return_type;
+    }
+
+    cell call() override
+    {
+        return (*op)(operand->call());
+    }
+};
+
+// Leave node to access a column in a view.
 struct column_accessor : expression_t
 {
     int column;
@@ -249,6 +287,7 @@ struct column_accessor : expression_t
     }
 };
 
+// Leave node that emits a constant value
 struct const_expr : expression_t
 {
     cell value;

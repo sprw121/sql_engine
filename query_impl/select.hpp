@@ -16,6 +16,10 @@
 #include "query_object.hpp"
 #include "where.hpp"
 
+// Iterator with the same interface as other table_view.
+// Contains all the logic for manipulating the iterating
+// over the underlying view based on where, limit, and offset
+// clauses
 struct from_iterator
 {
     from_t from;
@@ -80,6 +84,10 @@ struct from_iterator
     }
 };
 
+// Base class for different types of selects (aggregate or column selection)
+// Implements the run command, which iterate over the table view
+// formed by the select and prints it to the screen.
+// Constructor constructs the appropriate underlying interface.
 struct select_t : query_object, table_view
 {
     from_iterator it;

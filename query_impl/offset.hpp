@@ -3,6 +3,7 @@
 
 #include "../parser.hpp"
 
+// Wraps unpacked of an offset expression
 struct offset_t
 {
     long long int offset;

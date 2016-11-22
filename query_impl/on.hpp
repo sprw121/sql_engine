@@ -3,6 +3,11 @@
 
 #include "../parser.hpp"
 
+// Load expects a single equality
+// comparison expression as an argument,
+// i.e. on column1 = column2
+
+// Unpackes that expression
 struct on_t
 {
     identitifer_t left_id;

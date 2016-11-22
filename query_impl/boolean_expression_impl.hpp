@@ -13,6 +13,19 @@
 #include "expression.hpp"
 #include "from.hpp"
 
+// The pattern for comparison (> , <, ==, !=, <=, >=)
+// Is for them to derive off comparison_t
+// Derived classes and responsible for setting the
+// appropriate function pointer to op.
+
+// Most of the comparison functions are implemented
+// as templated functions, which take in cells,
+// cast them to the appropriate types, and run the
+// comparison operation. Derived classes look
+// at there incoming expression types and
+// set the appropriate template
+
+// Unsafe, but works on x86_64, and is fast.
 struct comparison_t : boolean_expression_t
 {
     std::unique_ptr<expression_t> left;
@@ -39,6 +52,9 @@ bool int_equals(const cell& left, const cell& right)
     return *(long long int*)&left == *(long long int*)&right;
 }
 
+// FP equality needs special treatment, check is the difference
+// is less than epilson, for epilson being a scaled machine
+// epilson size
 template<typename T, typename U>
 bool fp_equals(const cell& left_, const cell& right_)
 {
@@ -82,6 +98,9 @@ bool int_nequals(const cell& left, const cell& right)
     return *(long long int*)&left != *(long long int*)&right;
 }
 
+// FP equality needs special treatment, check is the difference
+// is less than epilson, for epilson being a scaled machine
+// epilson size
 template<typename T, typename U>
 bool fp_nequals(const cell& left_, const cell& right_)
 {
@@ -268,6 +287,8 @@ struct gteq_t : comparison_t
     }
 };
 
+// Only unary booeal_expression, negates
+// on a child boolean_expression
 struct not_op : boolean_expression_t
 {
     std::unique_ptr<boolean_expression_t> operand;
@@ -300,6 +321,10 @@ struct or_t
     }
 };
 
+// Logical ops takes boolean expressions
+// to the left and right, and implement the
+// boolean_expression interface on them.
+// Templated on either and_t or or_t
 template<typename T>
 struct logical_op : boolean_expression_t
 {

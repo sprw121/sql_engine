@@ -10,6 +10,14 @@
 #include "as.hpp"
 #include "identitifer.hpp"
 
+// Load expects a variadic series of
+// "as" clauses as arguments,
+// i.e. load csv1 as table1, csv2 as table2 ....
+
+// Unpackes the argument list.
+// Stores a point back into the table map.
+// Run emplaces to emplace the appropriate
+// key value pair into the map.
 struct load_t : query_object
 {
     table_map_t* tables;

@@ -9,6 +9,12 @@
 #include "from.hpp"
 #include "identitifer.hpp"
 
+// Constructor for as expressions.
+// Templated on the expected
+// type of the left hand side.
+// We implement multiple constructors
+// because different left hand lefts
+// have different constructor signatures
 template<typename T>
 struct as_t
 {

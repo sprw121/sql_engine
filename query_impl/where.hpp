@@ -8,6 +8,8 @@
 
 #include "boolean_expression.hpp"
 
+// Unpacking a series of boolean expressions
+// that filter our select.
 struct where_t
 {
     std::vector<std::unique_ptr<boolean_expression_t>> filters;
@@ -17,7 +19,8 @@ struct where_t
             from_t& from) : filters()
     {
         // TODO We can potentially pass in an empty node here due
-        // to the way there where's on handled in select.
+        // to the way there where's on handled in select. We
+        // deal with this by just ignoring on empty WHERE.
         if(node.a_type != parse_tree_node::EMPTY)
         {
             if(node.args.size() == 0)

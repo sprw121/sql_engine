@@ -3,6 +3,7 @@
 #include "as.hpp"
 #include "select.hpp"
 
+// Wraps view construction
 from_t::from_t(parse_tree_node node,
                table_map_t& tables)
 {
@@ -17,7 +18,6 @@ from_t::from_t(parse_tree_node node,
         throw 0;
     }
 
-    //table_view_factory view_container(node.args[0], tables);
     auto container = view_factory(node.args[0], tables);
     view = container.view;
 }
