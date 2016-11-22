@@ -7,7 +7,7 @@ struct offset_t
 {
     long long int offset;
 
-    offset_t() = default;
+    offset_t() : offset(0) {};
     offset_t(parse_tree_node node)
     {
         if(node.args.size() != 1)

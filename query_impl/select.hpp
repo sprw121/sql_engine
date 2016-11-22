@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 
+#include "../output_format.hpp"
 #include "../parser.hpp"
 #include "../table.hpp"
 #include "../table_views.hpp"
@@ -93,29 +94,62 @@ struct select_t : query_object, table_view
 
     void run() override
     {
-        auto num_columns = width();
-        std::cout << height() << std::endl;
-        for(auto& col_name : column_names)
-            std::cout << std::setw(10) << col_name << " | ";
-        std::cout << std::endl;
-
-        for(unsigned int i = 0 ; i < num_columns; i++)
-            std::cout << "-----------+-";
-        std::cout << std::endl;
-
-
-        while(!empty())
+        if(out_format == format_t::FORMATTED)
         {
-            for(unsigned int i = 0; i < num_columns; i++)
+            auto num_columns = width();
+            for(unsigned int i = 0 ; i < num_columns; i++)
             {
-                cell value = access_column(i);
-                if(column_types[i] == cell_type::INT)
-                    std::cout << std::setw(10) << value.i << " | ";
-                else
-                    std::cout << std::setw(10) << value.d << " | ";
+                std::cout << std::setw(10) << column_names[i];
+                if(i != num_columns - 1) std::cout << " | ";
             }
             std::cout << std::endl;
-            advance_row();
+
+            for(unsigned int i = 0 ; i < num_columns; i++)
+            {
+                std::cout << "----------";
+                if(i != num_columns - 1) std::cout << "-+-";
+            }
+            std::cout << std::endl;
+
+            while(!empty())
+            {
+                for(unsigned int i = 0; i < num_columns; i++)
+                {
+                    cell value = access_column(i);
+                    if(column_types[i] == cell_type::INT)
+                        std::cout << std::setw(10) << value.i;
+                    else
+                        std::cout << std::setw(10) << value.d;
+                    if(i != num_columns - 1) std::cout  << " | ";
+                }
+                std::cout << std::endl;
+                advance_row();
+            }
+        }
+        else if (out_format == format_t::CSV)
+        {
+            auto num_columns = width();
+            for(unsigned int i = 0 ; i < num_columns; i++)
+            {
+                std::cout << column_names[i];
+                if(i != num_columns - 1) std::cout << ",";
+            }
+            std::cout << std::endl;
+
+            while(!empty())
+            {
+                for(unsigned int i = 0; i < num_columns; i++)
+                {
+                    cell value = access_column(i);
+                    if(column_types[i] == cell_type::INT)
+                        std::cout << value.i;
+                    else
+                        std::cout << value.d;
+                    if(i != num_columns - 1) std::cout  << ",";
+                }
+                std::cout << std::endl;
+                advance_row();
+            }
         }
     }
 };

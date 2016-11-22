@@ -36,8 +36,8 @@ struct parse_tree_node
     }
     void print(int level)
     {
-        for(int i = 0; i < level; i++) std::cout << "    ";
-        std::cout << output_token(token) << std::endl;
+        for(int i = 0; i < level; i++) std::cerr << "    ";
+        std::cerr << output_token(token) << std::endl;
         for(auto& arg: args) arg.print(level+1);
     }
 };

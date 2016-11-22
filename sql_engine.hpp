@@ -21,48 +21,48 @@
 struct sql_engine
 {
     table_map_t tables;
+    std::vector<token_t> tokens;
 
     sql_engine() : tables() {};
 
     void run_shell()
     {
-        std::vector<token_t> tokens;
-        std::string line;
-        token_t token;
         while(1)
         {
-            std::cerr << "> ";
+            std::string line;
+            std::cout << "> ";
             std::getline(std::cin, line);
-            lexer l(line);
-            while(l.next_token(token))
+            process_line(line);
+        }
+    }
+
+    void process_line(std::string& line)
+    {
+        lexer l(line);
+        token_t token;
+        while(l.next_token(token))
+        {
+            output_token(token);
+            switch(token.t)
             {
-                output_token(token);
-                switch(token.t)
+                case token_t::INVALID:
+                    tokens = std::vector<token_t>();
+                    break;
+                case token_t::END:
                 {
-                    case token_t::INVALID:
-                        tokens = std::vector<token_t>();
-                        break;
-                    case token_t::END:
-                    {
-                        execute_query(tokens);
-                        tokens = std::vector<token_t>();
-                        break;
-                    }
-                    default:
-                        tokens.push_back(token);
-                        break;
+                    execute_query();
+                    tokens.resize(0);
+                    break;
                 }
+                default:
+                    tokens.push_back(token);
+                    break;
             }
         }
     }
 
-    void load_from_csv(const char* arg)
+    void load_from_csv(std::string& table_name, std::string& file_name)
     {
-
-        int idx = 0, len = strlen(arg);
-        while(idx < len && arg[idx] != '=') idx++;
-        std::string table_name(arg, idx), file_name(arg + idx + 1);
-
         if(tables.find(table_name) != tables.end())
         {
             std::cerr << "Invalid input: Attempted to load more than one table of the same name."
@@ -73,7 +73,7 @@ struct sql_engine
         tables.emplace(std::make_pair(table_name, std::make_shared<table>(file_name)));
     }
 
-    void execute_query(std::vector<token_t>& tokens)
+    void execute_query()
     {
         try
         {

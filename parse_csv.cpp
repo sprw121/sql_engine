@@ -58,7 +58,7 @@ std::vector<std::vector<char*>> parse_csv(std::string& file_name)
             if(columns == 0) columns = tmp.size();
             if(tmp.size() != columns)
             {
-                std::cout << "Error reading " << file_name
+                std::cerr << "Error reading " << file_name
                     << ": mismatching column length on line " << ret.size() + 1
                     << ". Expected: " << columns
                     << ". Got: " << tmp.size() << std::endl;

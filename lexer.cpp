@@ -212,7 +212,7 @@ token_t lexer::lex_string()
 
     if(idx == query.size())
     {
-        std::cout << "Unclosed quotation: " << std::endl
+        std::cerr << "Unclosed quotation: " << std::endl
                   << "     " << std::string(&query[start], idx - start) << std::endl
                   << "      ^" << std::endl;
         ret = token_t(token_t::INVALID);

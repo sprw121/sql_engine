@@ -59,11 +59,6 @@ struct column_select : select_t
                 column_idx++;
             }
         }
-
-        std::cout << "Column selector: " << std::endl;
-        std::cout << empty() << std::endl;
-        std::cout << height()<< std::endl;
-        std::cout << width()<< std::endl;
     }
 
     cell access_column(unsigned int i) override

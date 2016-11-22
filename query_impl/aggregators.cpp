@@ -87,8 +87,9 @@ struct median_t : aggregator_t
 
     unsigned int partition(unsigned int left, unsigned int right)
     {
-        auto pivot     = vals[right - 1];
-        auto pivot_idx = right - 1;
+        auto pivot     = vals[right];
+        auto pivot_idx = right;
+        right--;
 
         while(left < right)
         {
@@ -104,41 +105,35 @@ struct median_t : aggregator_t
                 left++;
         }
 
-        std::swap(vals[left], vals[pivot_idx]);
+        if(left == right)
+            if(vals[left] > pivot)
+                std::swap(vals[left], vals[pivot_idx]);
+            else
+                std::swap(vals[++left], vals[pivot_idx]);
         return left;
     }
 
     T quick_select_impl(unsigned int left, unsigned int right, unsigned int kth)
     {
-        if(right == left + 1)
+        if(right == left)
         {
             return vals[left];
         }
 
         auto pivot_idx = this->partition(left, right);
-        if(pivot_idx = kth)
+        if(pivot_idx == kth)
         {
             return vals[pivot_idx];
         }
         else if(pivot_idx > kth)
-            return this->quick_select_impl(left, pivot_idx, kth);
+            return this->quick_select_impl(left, pivot_idx-1, kth);
         else if(pivot_idx < kth)
             return this->quick_select_impl(pivot_idx + 1, right, kth);
     }
 
     T quick_select()
     {
-        if(seen % 2)
-        {
-            auto upper_median = this->quick_select_impl(0, seen, seen/2);
-            T    lower_median = std::numeric_limits<T>::lowest();
-            for(int i = 0; i < seen/2; i++)
-                lower_median = vals[i] > lower_median ? vals[i] : lower_median;
-
-            return (double)upper_median / 2  + (double)lower_median/2;
-        }
-        else
-            return this->quick_select_impl(0, seen, seen/2);
+        return this->quick_select_impl(0, seen-1, seen/2);
     }
 
     cell value()

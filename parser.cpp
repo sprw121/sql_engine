@@ -1,7 +1,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 
-#define DEBUG
+//#define DEBUG
 
 int precedence(token_t t)
 {
@@ -161,12 +161,12 @@ parse_tree_node parse(std::vector<token_t>& tokens)
     for(auto& token : tokens)
     {
 #ifdef DEBUG
-        std::cout << std::endl << "--------------------" << std::endl;
-        std::cout << std::endl << "--------------------" << std::endl;
-        for(auto & o : operations) std::cout << output_token(o) << " ";
-        std::cout << std::endl;
-        for(auto & p : parse_tree) std::cout << output_token(p.token) << " ";
-        std::cout << std::endl << output_token(token) << std::endl;
+        std::cerr << std::endl << "--------------------" << std::endl;
+        std::cerr << std::endl << "--------------------" << std::endl;
+        for(auto & o : operations) std::cerr << output_token(o) << " ";
+        std::cerr << std::endl;
+        for(auto & p : parse_tree) std::cerr << output_token(p.token) << " ";
+        std::cerr << std::endl << output_token(token) << std::endl;
 #endif
 
         switch(token.t)
@@ -298,7 +298,7 @@ parse_tree_node parse(std::vector<token_t>& tokens)
     while(operations.size())
     {
 #ifdef DEBUG
-        std::cerr << "--------------------" << std::endl;
+        std::cerr << std::endl << "--------------------" << std::endl;
         for(auto & o : operations) std::cerr << output_token(o) << " ";
         std::cerr << std::endl;
         for(auto & p : parse_tree) std::cerr << output_token(p.token) << " ";
