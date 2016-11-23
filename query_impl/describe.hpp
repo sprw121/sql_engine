@@ -11,7 +11,7 @@
 
 // Construct a describe command.
 // Caches a pointer to tables and
-// Attempted to call describe on the
+// attempts to call describe on the
 // appropriate ones. Variadic, so
 // accepts any number of incoming table names.
 struct describe_t : query_object

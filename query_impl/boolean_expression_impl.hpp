@@ -15,7 +15,7 @@
 
 // The pattern for comparison (> , <, ==, !=, <=, >=)
 // Is for them to derive off comparison_t
-// Derived classes and responsible for setting the
+// Derived classes are responsible for setting the
 // appropriate function pointer to op.
 
 // Most of the comparison functions are implemented

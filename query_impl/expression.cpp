@@ -49,7 +49,7 @@ std::unique_ptr<expression_t> expression_factory(parse_tree_node node, from_t& f
         }
     }
 
-    std::cerr << "Unexpected arg where expection expression. Parse tree:" << std::endl;
+    std::cerr << "Unexpected arg where expected expression. Parse tree:" << std::endl;
     node.print();
     throw 0;
 }

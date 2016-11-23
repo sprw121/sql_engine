@@ -20,7 +20,7 @@ std::vector<std::vector<char*>> parse_csv(std::string& file_name)
     auto len = ftell(fd);
     rewind(fd);
 
-    // A little hacky, but freeing this buffer is handling later
+    // A little hacky, but freeing this buffer is handled later
     // Due to the way the IR is constructed, ret[0][0] will hold this pointer
     char* buffer = (char*)malloc(sizeof(char) * (len + 1));
     if(buffer == NULL)

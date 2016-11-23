@@ -37,8 +37,8 @@ struct binary_op : expression_t
     }
 };
 
-// Unsafe way of implementing operations,
-// but quit efficient and works on x86
+// Unsafe way of implementing operations, but efficient,
+// and allows us to generate code from templates
 template<typename T, typename U>
 cell add(const cell& left, const cell& right)
 {
@@ -258,7 +258,7 @@ struct negate_t : expression_t
     }
 };
 
-// Leave node to access a column in a view.
+// Leaf node to access a column in a view.
 struct column_accessor : expression_t
 {
     int column;
@@ -287,7 +287,7 @@ struct column_accessor : expression_t
     }
 };
 
-// Leave node that emits a constant value
+// Leaf node that emits a constant value
 struct const_expr : expression_t
 {
     cell value;

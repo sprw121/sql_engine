@@ -13,7 +13,7 @@
 // Templated on the expected
 // type of the left hand side.
 // We implement multiple constructors
-// because different left hand lefts
+// because different left hand sides
 // have different constructor signatures
 template<typename T>
 struct as_t

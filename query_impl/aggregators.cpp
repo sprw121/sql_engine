@@ -67,7 +67,7 @@ struct min_t : aggregator_t
 };
 
 // Implements quick select pivot based selection algorithm.
-// We allocate up from all the space that might be necessary,
+// We allocate up to all the space that might be necessary,
 // although we may not fill them all as some views return a
 // speculative maximum height.
 template<typename T>
@@ -93,7 +93,7 @@ struct median_t : aggregator_t
     // such that all smaller elements come before
     // and larger elements come after.
 
-    // Inclusion left and right, [left, right]
+    // Inclusive left and right, [left, right]
     unsigned int partition(unsigned int left, unsigned int right)
     {
         auto pivot     = vals[right];

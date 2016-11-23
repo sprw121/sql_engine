@@ -91,7 +91,7 @@ struct column_select : select_t
     }
 };
 
-// Aggregate selects also from a table view,
+// Aggregate selects also define a table view,
 // but only 1 row high, with the row being the
 // values of the accumulators
 struct aggregate_select : select_t
@@ -165,9 +165,9 @@ struct aggregate_select : select_t
 };
 
 // Logic for constructing a select is somewhat involved,
-// And the type of select we're doing isn't known until
-// we see the expressions that our generating the columns.
-// Thus we need a factory method that calls the appropriate constructor
+// and the type of select we're doing isn't known until
+// we see the expressions that are our generating the columns.
+// Thus we need a factory method that calls the appropriate constructor.
 // Parser constructs the arguments in reverse order.
 std::unique_ptr<select_t> select_factory(parse_tree_node& node,
                                          table_map_t& tables)

@@ -1,7 +1,7 @@
 This project is a command line sql engine
 for csv files. Supports loading of csvs with
 integer or floating point columns. Column
-headers for required. Currently implements
+headers are required. Currently implements
 basic SELECT queries on them for maniuplation.
 Can be run in an interactive terminal mode,
 or a cli only mode.
@@ -33,10 +33,6 @@ was built and tested with:
 g++ (Ubuntu 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609
 -std=c++11
 
-Some of the ways that the data is stored and accessed
-to support multiple column types may vary from compiler
-to compiler or platform to platform.
-
 Currently supported query commands are:
 SELECT, LOAD, DESCRIBE, SHOW, EXIT.
 
@@ -49,19 +45,19 @@ WHERE, OFFSET and LIMIT clauses.
 
 Column expressions maybe arithmetic expressions
 of columns from the FROM clause, or an aggregate
-of and arithmetic expression. Expressions of aggregates
+of an arithmetic expression. Expressions of aggregates
 are not supported. Currently implemented aggregates are
 max, min, average, median. Column expressions maybe named
-with an as clause, which caused them to be named
+with an AS clause, which causes them to be named
 that in the output. Otherwise they are named col_n, where
 n is there column index.
 
-FROM clause can take in a table, select, join. Joins maybe
+FROM clause can take in a table, select, or join. Joins maybe
 non-trivial, so we can join on joins, or select statements.
 Currently implemented joins are INNER_JOIN, OUTER_JOIN,
 LEFT_JOIN, RIGHT_JOIN, CROSS_JOIN. The former 4 must
 have an ON clause of the form left.column = right.column,
-as the index to join on. Only joins with integer column keys
+as the index to join on. Only joins with integer column
 are implemented.
 
 WHERE clause takes in an arbitrary number of boolean
@@ -85,7 +81,7 @@ SELECT ASK * BID + TIME from quotes;
 SELECT TIME as t, BID as b, ASK as a from quotes;
 SELECT * from trades where TIME > 5, PRICE > 10.01;
 
-We can do pretty arbitrary things based on the above rules;
+We can do pretty arbitrary things based on the above rules.
 
 LOAD
 ----------
