@@ -105,7 +105,7 @@ template<typename T, typename U>
 bool fp_nequals(const cell& left_, const cell& right_)
 {
     double left  = (double)*(const T*)&left_;
-    double right = (double)*(const U*)&right;
+    double right = (double)*(const U*)&right_;
     return (std::abs(left - right) >=
                     std::numeric_limits<double>::epsilon() * std::abs(left + right) * 10);
 }

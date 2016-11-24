@@ -308,7 +308,7 @@ struct const_expr : expression_t
         if(node.token.t == token_t::INT_LITERAL)
             return_type = cell_type::INT;
         if(node.token.t == token_t::FLOAT_LITERAL)
-            return_type == cell_type::FLOAT;
+            return_type = cell_type::FLOAT;
     }
 
     cell call() override
